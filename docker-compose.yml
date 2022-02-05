@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  lite-cdn:
+    platform: linux/x86_64
+    image: lite-cdn
+    restart: always
+    environment:
+      UPLOAD_SECRET: 9nvhgBNgtHCYvEDUgvv
+    ports:
+      - 11112:11111
+    volumes:
+      - ./public:/usr/app/public
