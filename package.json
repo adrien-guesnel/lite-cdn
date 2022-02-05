@@ -1,0 +1,29 @@
+{
+  "name": "lite-cdn",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./dist/index.js",
+    "dev": "ts-node-dev ./src/index.ts",
+    "lint": "eslint --ignore-path .gitignore --ext .js,.ts,.tsx .",
+    "docker-image:build": "docker build --platform linux/amd64 ./ -t lite-cdn",
+    "docker-image:save": "docker save lite-cdn | gzip > lite-cdn-latest.tar.gz"
+  },
+  "dependencies": {
+    "body-parser": "^1.19.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.17.2",
+    "jimp": "^0.16.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/node": "16",
+    "eslint": "^8.8.0",
+    "husky": "^7.0.4",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.5.5"
+  }
+}
