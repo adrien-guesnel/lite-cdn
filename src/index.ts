@@ -18,7 +18,7 @@ const SAVE_MAX_WIDTH = Number(process.env.SAVE_MAX_WIDTH) || 1920;
 
 const app = express();
 
-app.use(bodyParser.raw({ type: ["image/jpeg", "image/png"], limit: "10mb" }));
+app.use(bodyParser.raw({ type: ["image/*"], limit: "10mb" }));
 
 const corsOptions = {
   origin: APP_ORIGIN,
@@ -80,9 +80,19 @@ app.get("/img/:file", async function (req, res) {
 });
 
 app.post("/img/:name", function (req, res) {
-  const fileName = req.params.name;
+  const filename = req.params.name;
   const imgData = req.body;
   const key = req.query.key;
+
+  if (!filename) {
+    res.status(500).send("No filename found");
+    return;
+  }
+
+  if (!imgData || JSON.stringify(imgData) === "{}") {
+    res.status(500).send("No img data found into the request");
+    return;
+  }
 
   if (key !== UPLOAD_SECRET) {
     console.error("Bad key");
@@ -94,14 +104,14 @@ app.post("/img/:name", function (req, res) {
     return;
   }
 
-  const filePath = path.resolve(`public/images/${fileName}`);
+  const filePath = path.resolve(`public/images/${filename}`);
 
   Jimp.read(imgData)
     .then((image) => {
       image.scaleToFit(SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT);
       image.quality(80);
       image.write(filePath, () => {
-        res.end();
+        res.send("ok");
       });
     })
     .catch((err) => {
