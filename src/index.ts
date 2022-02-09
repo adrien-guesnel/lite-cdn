@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import fs from "fs";
+import helmet from "helmet";
 import Jimp from "jimp";
 import path from "path";
 import url from "url";
@@ -19,6 +20,7 @@ const SAVE_MAX_WIDTH = Number(process.env.SAVE_MAX_WIDTH) || 1920;
 const app = express();
 
 app.use(bodyParser.raw({ type: ["image/*"], limit: "10mb" }));
+app.use(helmet());
 
 const corsOptions = {
   origin: APP_ORIGIN,
@@ -35,9 +37,6 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/img/:file", async function (req, res) {
-  res.removeHeader("Transfer-Encoding");
-  res.removeHeader("X-Powered-By");
-
   const query = url.parse(req.url, true).query;
   const file = req.params.file;
   const filePath = path.resolve(`public/images/${file}`);
