@@ -10,7 +10,7 @@ import url from "url";
 dotenv.config();
 
 const PORT = 11111;
-const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "defaultSecret";
+const API_SECRET = process.env.API_SECRET || "defaultSecret";
 const APP_ORIGIN = process.env.APP_ORIGIN || "*";
 const CACHE_DURATION = Number(process.env.CACHE_DURATION) || 300;
 const SAVE_MAX_HEIGHT = Number(process.env.SAVE_MAX_HEIGHT) || 1080;
@@ -94,13 +94,8 @@ app.post("/img/:name", function (req, res) {
     return;
   }
 
-  if (key !== UPLOAD_SECRET) {
-    console.error("Bad key");
-    res
-      .status(500)
-      .send(
-        "Error during upload of your image. Please check that your image is jpeg or png type and below 10Mb."
-      );
+  if (key !== API_SECRET) {
+    res.status(500).send("You are unauthorized to upload image");
     return;
   }
 
@@ -122,6 +117,27 @@ app.post("/img/:name", function (req, res) {
           "Error during upload of your image. Please check that your image is jpeg or png type and below 10Mb."
         );
     });
+});
+
+app.delete("/img/:filename", function (req, res) {
+  const { key } = req.query;
+
+  const filename = req.params.filename;
+  const filepath = path.resolve(`public/images/${filename}`);
+
+  if (!fs.existsSync(filepath)) {
+    res.status(404).send("Image not found");
+    return;
+  }
+
+  if (key !== API_SECRET) {
+    res.status(500).send("You are unauthorized to delete image");
+    return;
+  }
+
+  fs.unlink(filepath, function (err) {
+    if (err) return console.error(err);
+  });
 });
 
 app.listen(PORT, () => {

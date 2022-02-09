@@ -6,7 +6,7 @@ services:
     image: lite-cdn
     restart: always
     environment:
-      UPLOAD_SECRET: 9nvhgBNgtHCYvEDUgvv
+      API_SECRET: 9nvhgBNgtHCYvEDUgvv
     ports:
       - 11112:11111
     volumes:
