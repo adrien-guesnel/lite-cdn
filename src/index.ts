@@ -7,7 +7,6 @@ import fs from "fs";
 import helmet from "helmet";
 import Jimp from "jimp";
 import path from "path";
-import url from "url";
 
 dotenv.config();
 
@@ -48,7 +47,6 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/img/:file", async function (req, res) {
-  const query = url.parse(req.url, true).query;
   const file = req.params.file;
   const filePath = path.resolve(`public/images/${file}`);
 
@@ -57,7 +55,7 @@ app.get("/img/:file", async function (req, res) {
     return;
   }
 
-  const { h, w, q } = query;
+  const { h, w, q } = req.query;
 
   if (!h && !w && !q) {
     res.sendFile(filePath, { maxAge: CACHE_DURATION * 1000 });
@@ -92,7 +90,7 @@ app.get("/img/:file", async function (req, res) {
 app.post("/img/:name", apiLimiter, function (req, res) {
   const filename = req.params.name;
   const imgData = req.body;
-  const key = req.query.key;
+  const { key } = req.query;
 
   if (key !== API_SECRET) {
     res.status(403).send("You are unauthorized to upload image");
@@ -109,13 +107,13 @@ app.post("/img/:name", apiLimiter, function (req, res) {
     return;
   }
 
-  const filePath = path.resolve(`public/images/${filename}`);
+  const filepath = path.resolve(`public/images/${filename}`);
 
   Jimp.read(imgData)
     .then((image) => {
       image.scaleToFit(SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT);
       image.quality(80);
-      image.write(filePath, () => {
+      image.write(filepath, () => {
         res.send("ok");
       });
     })
@@ -147,6 +145,7 @@ app.delete("/img/:filename", apiLimiter, function (req, res) {
 
   fs.unlink(filepath, function (err) {
     if (err) return console.error(err);
+    res.send("ok");
   });
 });
 
