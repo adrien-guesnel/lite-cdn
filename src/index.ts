@@ -24,6 +24,7 @@ const app = express();
 
 app.use(bodyParser.raw({ type: ["image/*"], limit: "10mb" }));
 app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
 
 const apiLimiter = rateLimit({
   windowMs: API_WINDOW_MIN_DELAY * 60 * 1000,
