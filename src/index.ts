@@ -5,8 +5,8 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import fs from "fs";
 import helmet from "helmet";
-import Jimp from "jimp";
 import path from "path";
+import sharp from "sharp";
 
 dotenv.config();
 
@@ -63,32 +63,26 @@ app.get("/img/:file", async function (req, res) {
     return;
   }
 
-  const height = Number(h) || 0;
-  const width = Number(w) || 0;
-  const quality = Number(q) <= 100 && Number(q) >= 0 ? Number(q) : 100;
+  const height = Number(h) || null;
+  const width = Number(w) || null;
 
-  Jimp.read(filePath).then((img) => {
-    img.quality(quality);
-    const mimeType = img.getMIME();
+  const image = await sharp(filePath);
+  const metadata = await image.metadata();
 
-    if (width && height) {
-      img.cover(width, height);
-    } else if (width) {
-      img.resize(width, Jimp.AUTO);
-    } else if (height) {
-      img.resize(Jimp.AUTO, height);
-    }
+  const buffer = await image
+    .resize(height, width, {
+      withoutEnlargement: true,
+      fit: "inside",
+    })
+    .toBuffer();
 
-    img.getBuffer(mimeType, (error, img) => {
-      res
-        .set("Cache-control", `public, max-age=${CACHE_DURATION}`)
-        .type(mimeType)
-        .send(img);
-    });
-  });
+  res
+    .set("Cache-control", `public, max-age=${CACHE_DURATION}`)
+    .type(metadata.format as string)
+    .send(buffer);
 });
 
-app.post("/img/:name", apiLimiter, function (req, res) {
+app.post("/img/:name", apiLimiter, async function (req, res) {
   const filename = req.params.name;
   const imgData = req.body;
   const { key } = req.query;
@@ -110,22 +104,28 @@ app.post("/img/:name", apiLimiter, function (req, res) {
 
   const filepath = path.resolve(`public/images/${filename}`);
 
-  Jimp.read(imgData)
-    .then((image) => {
-      image.scaleToFit(SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT);
-      image.quality(80);
-      image.write(filepath, () => {
-        res.send("ok");
-      });
-    })
-    .catch((err) => {
-      console.error(err);
-      res
-        .status(500)
-        .send(
-          "Error during upload of your image. Please check that your image is jpeg or png type and below 10Mb."
-        );
-    });
+  try {
+    const image = await sharp(imgData);
+    const metadata = await image.metadata();
+
+    await image
+      .resize(SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT, {
+        withoutEnlargement: metadata.format === "svg" ? false : true,
+        fit: "inside",
+      })
+      .toFormat("webp")
+      .toFile(filepath);
+
+    res.send("ok");
+  } catch (error) {
+    console.error(error);
+
+    res
+      .status(500)
+      .send(
+        "Error during upload of your image. Please check that your image is jpeg or png type and below 10Mb."
+      );
+  }
 });
 
 app.delete("/img/:filename", apiLimiter, function (req, res) {

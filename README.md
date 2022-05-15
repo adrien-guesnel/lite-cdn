@@ -1,6 +1,6 @@
 # lite-cdn
 
-A lite CDN to save and serve images
+A lite webserver to transform JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG images into WebP images and save them locally. We can access to these images later like a CDN.
 
 ## Installation
 
