@@ -12,3 +12,4 @@ lerna-debug.log*
 *.gz
 .env
 .env.test
+.DS_STORE

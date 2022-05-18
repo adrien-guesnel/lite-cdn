@@ -7,6 +7,7 @@ import fs from "fs";
 import helmet from "helmet";
 import path from "path";
 import sharp from "sharp";
+import { createPublicDirectory, saveImage } from "./utils";
 
 dotenv.config();
 
@@ -19,6 +20,8 @@ const SAVE_MAX_WIDTH = Number(process.env.SAVE_MAX_WIDTH) || 1920;
 const API_WINDOW_MIN_DELAY = Number(process.env.API_WINDOW_MIN_DELAY) || 15;
 const API_LIMIT_REQUESTS_BY_WINDOW_AND_IP =
   Number(process.env.API_LIMIT_REQUESTS_BY_WINDOW_AND_IP) || 50;
+
+createPublicDirectory();
 
 const app = express();
 
@@ -105,25 +108,14 @@ app.post("/img/:name", apiLimiter, async function (req, res) {
   const filepath = path.resolve(`public/images/${filename}`);
 
   try {
-    const image = await sharp(imgData);
-    const metadata = await image.metadata();
-
-    await image
-      .resize(SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT, {
-        withoutEnlargement: metadata.format === "svg" ? false : true,
-        fit: "inside",
-      })
-      .toFormat("webp")
-      .toFile(filepath);
-
+    await saveImage(imgData, filepath, SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT);
     res.send("ok");
   } catch (error) {
     console.error(error);
-
     res
       .status(500)
       .send(
-        "Error during upload of your image. Please check that your image is jpeg or png type and below 10Mb."
+        "Error during upload of your image. Please check that your image is JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG type and below 10Mb."
       );
   }
 });
