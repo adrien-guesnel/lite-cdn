@@ -18,11 +18,3 @@ export async function saveImage(
     .toFormat("webp")
     .toFile(filepath);
 }
-
-export function createPublicDirectory() {
-  const dir = "public";
-
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
-  }
-}

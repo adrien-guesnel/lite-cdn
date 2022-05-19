@@ -7,7 +7,7 @@ import fs from "fs";
 import helmet from "helmet";
 import path from "path";
 import sharp from "sharp";
-import { createPublicDirectory, saveImage } from "./utils";
+import { saveImage } from "./utils";
 
 dotenv.config();
 
@@ -20,8 +20,6 @@ const SAVE_MAX_WIDTH = Number(process.env.SAVE_MAX_WIDTH) || 1920;
 const API_WINDOW_MIN_DELAY = Number(process.env.API_WINDOW_MIN_DELAY) || 15;
 const API_LIMIT_REQUESTS_BY_WINDOW_AND_IP =
   Number(process.env.API_LIMIT_REQUESTS_BY_WINDOW_AND_IP) || 50;
-
-createPublicDirectory();
 
 const app = express();
 

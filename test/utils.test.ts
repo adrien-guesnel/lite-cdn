@@ -1,8 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { createPublicDirectory, saveImage } from "../src/utils";
-
-createPublicDirectory();
+import { saveImage } from "../src/utils";
 
 describe("saveImage", () => {
   test("save landscape jpeg image", async () => {

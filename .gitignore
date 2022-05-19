@@ -1,6 +1,8 @@
 node_modules/
 dist/
-public/
+public/*
+!public/.keep
+
 
 logs
 *.log
