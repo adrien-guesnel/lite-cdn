@@ -85,7 +85,7 @@ describe("saveImage", () => {
   });
 });
 
-describe("getResizedImage", () => {
+describe.only("getResizedImage", () => {
   test("test resize with only width", async () => {
     const bufferAtTest = await getResizedImage(
       path.join(__dirname, "/images/landscape.jpeg"),
