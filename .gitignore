@@ -1,6 +1,12 @@
 node_modules/
 dist/
-public/
+public/*
+!public/.keep
+!public/images
+public/images/*
+!public/images/.keep
+
+
 
 logs
 *.log
@@ -12,3 +18,4 @@ lerna-debug.log*
 *.gz
 .env
 .env.test
+.DS_STORE

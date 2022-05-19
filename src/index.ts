@@ -5,8 +5,9 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import fs from "fs";
 import helmet from "helmet";
-import Jimp from "jimp";
 import path from "path";
+import sharp from "sharp";
+import { getResizedImage, saveImage } from "./utils";
 
 dotenv.config();
 
@@ -49,46 +50,32 @@ app.get("/health", (req, res) => {
 
 app.get("/img/:file", async function (req, res) {
   const file = req.params.file;
-  const filePath = path.resolve(`public/images/${file}`);
+  const filepath = path.resolve(`public/images/${file}`);
 
-  if (!fs.existsSync(filePath)) {
+  if (!fs.existsSync(filepath)) {
     res.status(404).send("Image not found");
     return;
   }
 
-  const { h, w, q } = req.query;
+  const { h, w } = req.query;
 
-  if (!h && !w && !q) {
-    res.sendFile(filePath, { maxAge: CACHE_DURATION * 1000 });
+  if (!h && !w) {
+    res.sendFile(filepath, { maxAge: CACHE_DURATION * 1000 });
     return;
   }
 
-  const height = Number(h) || 0;
-  const width = Number(w) || 0;
-  const quality = Number(q) <= 100 && Number(q) >= 0 ? Number(q) : 100;
+  const image = await sharp(filepath);
+  const metadata = await image.metadata();
 
-  Jimp.read(filePath).then((img) => {
-    img.quality(quality);
-    const mimeType = img.getMIME();
+  const buffer = await getResizedImage(filepath, w, h);
 
-    if (width && height) {
-      img.cover(width, height);
-    } else if (width) {
-      img.resize(width, Jimp.AUTO);
-    } else if (height) {
-      img.resize(Jimp.AUTO, height);
-    }
-
-    img.getBuffer(mimeType, (error, img) => {
-      res
-        .set("Cache-control", `public, max-age=${CACHE_DURATION}`)
-        .type(mimeType)
-        .send(img);
-    });
-  });
+  res
+    .set("Cache-control", `public, max-age=${CACHE_DURATION}`)
+    .type(metadata.format as string)
+    .send(buffer);
 });
 
-app.post("/img/:name", apiLimiter, function (req, res) {
+app.post("/img/:name", apiLimiter, async function (req, res) {
   const filename = req.params.name;
   const imgData = req.body;
   const { key } = req.query;
@@ -110,22 +97,17 @@ app.post("/img/:name", apiLimiter, function (req, res) {
 
   const filepath = path.resolve(`public/images/${filename}`);
 
-  Jimp.read(imgData)
-    .then((image) => {
-      image.scaleToFit(SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT);
-      image.quality(80);
-      image.write(filepath, () => {
-        res.send("ok");
-      });
-    })
-    .catch((err) => {
-      console.error(err);
-      res
-        .status(500)
-        .send(
-          "Error during upload of your image. Please check that your image is jpeg or png type and below 10Mb."
-        );
-    });
+  try {
+    await saveImage(imgData, filepath, SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT);
+    res.send("ok");
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send(
+        "Error during upload of your image. Please check that your image is JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG type and below 10Mb."
+      );
+  }
 });
 
 app.delete("/img/:filename", apiLimiter, function (req, res) {
