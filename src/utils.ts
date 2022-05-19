@@ -1,4 +1,3 @@
-import fs from "fs";
 import sharp from "sharp";
 
 export async function saveImage(
