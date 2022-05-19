@@ -28,6 +28,3 @@ jobs:
 
       - name: 🕵️‍♂️ Verify lint
         run: yarn lint
-
-      - name: 🕵️‍♂️ Launch tests
-        run: yarn test

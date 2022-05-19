@@ -2,12 +2,6 @@ import fs from "fs";
 import path from "path";
 import { getResizedImage, saveImage } from "../src/utils";
 
-describe.only("test", () => {
-  test("test", () => {
-    expect(true).toEqual(true);
-  });
-});
-
 describe("saveImage", () => {
   test("save landscape jpeg image", async () => {
     const imgData = fs.readFileSync(
@@ -85,29 +79,17 @@ describe("saveImage", () => {
   });
 });
 
-describe.only("getResizedImage", () => {
-  test.only("test resize with only width", async () => {
-    console.log("bufferAtTest", path.join(__dirname, "/images/landscape.jpeg"));
+describe("getResizedImage", () => {
+  test("test resize with only width", async () => {
     const bufferAtTest = await getResizedImage(
       path.join(__dirname, "/images/landscape.jpeg"),
       700,
       null
     );
-    console.log("buffer ok");
     const imageModel = fs.readFileSync(
       path.join(__dirname, "/model/landscape_w700.jpeg")
     );
-    console.log(
-      "imageModel",
-      path.join(__dirname, "/model/landscape_w700.jpeg")
-    );
-
-    expect(1).toEqual(1);
-    console.log("fake expect");
-
     expect(bufferAtTest).toEqual(imageModel);
-
-    console.log("after expect");
   });
 
   test("test resize with only height", async () => {
