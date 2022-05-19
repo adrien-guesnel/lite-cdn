@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { saveImage } from "../src/utils";
+import { getResizedImage, saveImage } from "../src/utils";
 
 describe("saveImage", () => {
   test("save landscape jpeg image", async () => {
@@ -76,5 +76,49 @@ describe("saveImage", () => {
     );
 
     expect(imageAtTest).toEqual(imageModel);
+  });
+});
+
+describe("getResizedImage", () => {
+  test("test resize with only width", async () => {
+    const bufferAtTest = await getResizedImage(
+      path.join(__dirname, "/images/landscape.jpeg"),
+      700,
+      null
+    );
+
+    const imageModel = fs.readFileSync(
+      path.join(__dirname, "/model/landscape_w700.jpeg")
+    );
+
+    expect(bufferAtTest).toEqual(imageModel);
+  });
+
+  test("test resize with only height", async () => {
+    const bufferAtTest = await getResizedImage(
+      path.join(__dirname, "/images/landscape.jpeg"),
+      null,
+      300
+    );
+
+    const imageModel = fs.readFileSync(
+      path.join(__dirname, "/model/landscape_h300.jpeg")
+    );
+
+    expect(bufferAtTest).toEqual(imageModel);
+  });
+
+  test("test resize with height and width", async () => {
+    const bufferAtTest = await getResizedImage(
+      path.join(__dirname, "/images/landscape.jpeg"),
+      100,
+      300
+    );
+
+    const imageModel = fs.readFileSync(
+      path.join(__dirname, "/model/landscape_h300_w100.jpeg")
+    );
+
+    expect(bufferAtTest).toEqual(imageModel);
   });
 });

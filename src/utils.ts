@@ -18,3 +18,16 @@ export async function saveImage(
     .toFormat("webp")
     .toFile(filepath);
 }
+
+export async function getResizedImage(
+  filepath: string,
+  width?: unknown,
+  height?: unknown
+) {
+  return await sharp(filepath)
+    .resize(Number(height) || null, Number(width) || null, {
+      withoutEnlargement: true,
+      fit: "inside",
+    })
+    .toBuffer();
+}

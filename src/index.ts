@@ -7,7 +7,7 @@ import fs from "fs";
 import helmet from "helmet";
 import path from "path";
 import sharp from "sharp";
-import { saveImage } from "./utils";
+import { getResizedImage, saveImage } from "./utils";
 
 dotenv.config();
 
@@ -50,32 +50,24 @@ app.get("/health", (req, res) => {
 
 app.get("/img/:file", async function (req, res) {
   const file = req.params.file;
-  const filePath = path.resolve(`public/images/${file}`);
+  const filepath = path.resolve(`public/images/${file}`);
 
-  if (!fs.existsSync(filePath)) {
+  if (!fs.existsSync(filepath)) {
     res.status(404).send("Image not found");
     return;
   }
 
-  const { h, w, q } = req.query;
+  const { h, w } = req.query;
 
-  if (!h && !w && !q) {
-    res.sendFile(filePath, { maxAge: CACHE_DURATION * 1000 });
+  if (!h && !w) {
+    res.sendFile(filepath, { maxAge: CACHE_DURATION * 1000 });
     return;
   }
 
-  const height = Number(h) || null;
-  const width = Number(w) || null;
-
-  const image = await sharp(filePath);
+  const image = await sharp(filepath);
   const metadata = await image.metadata();
 
-  const buffer = await image
-    .resize(height, width, {
-      withoutEnlargement: true,
-      fit: "inside",
-    })
-    .toBuffer();
+  const buffer = await getResizedImage(filepath, w, h);
 
   res
     .set("Cache-control", `public, max-age=${CACHE_DURATION}`)
