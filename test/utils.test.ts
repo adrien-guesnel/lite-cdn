@@ -2,6 +2,12 @@ import fs from "fs";
 import path from "path";
 import { getResizedImage, saveImage } from "../src/utils";
 
+describe.only("test", () => {
+  test("test", () => {
+    expect(true).toEqual(true);
+  });
+});
+
 describe("saveImage", () => {
   test("save landscape jpeg image", async () => {
     const imgData = fs.readFileSync(
