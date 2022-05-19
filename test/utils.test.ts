@@ -86,14 +86,19 @@ describe("saveImage", () => {
 });
 
 describe.only("getResizedImage", () => {
-  test("test resize with only width", async () => {
+  test.only("test resize with only width", async () => {
+    console.log("bufferAtTest", path.join(__dirname, "/images/landscape.jpeg"));
     const bufferAtTest = await getResizedImage(
       path.join(__dirname, "/images/landscape.jpeg"),
       700,
       null
     );
-
+    console.log("buffer ok");
     const imageModel = fs.readFileSync(
+      path.join(__dirname, "/model/landscape_w700.jpeg")
+    );
+    console.log(
+      "imageModel",
       path.join(__dirname, "/model/landscape_w700.jpeg")
     );
 
