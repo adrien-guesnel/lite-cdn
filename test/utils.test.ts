@@ -102,6 +102,9 @@ describe.only("getResizedImage", () => {
       path.join(__dirname, "/model/landscape_w700.jpeg")
     );
 
+    expect(1).toEqual(1);
+    console.log("fake expect");
+
     expect(bufferAtTest).toEqual(imageModel);
 
     console.log("after expect");
