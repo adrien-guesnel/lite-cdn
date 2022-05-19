@@ -103,6 +103,8 @@ describe.only("getResizedImage", () => {
     );
 
     expect(bufferAtTest).toEqual(imageModel);
+
+    console.log("after expect");
   });
 
   test("test resize with only height", async () => {
