@@ -1,5 +1,5 @@
 # Install all node_modules and build the project
-FROM node:16.13.2-alpine AS build
+FROM node:18.12.1-alpine AS build
 
 WORKDIR /usr/app
 COPY package.json yarn.lock ./
@@ -9,7 +9,7 @@ COPY . .
 RUN yarn build
 RUN yarn install --prod
 
-FROM node:16.13.2-alpine AS prod
+FROM node:18.12.1-alpine AS prod
 
 WORKDIR /usr/app
 
