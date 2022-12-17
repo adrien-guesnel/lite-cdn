@@ -12,28 +12,28 @@
     "docker-image:save": "docker save lite-cdn | gzip > lite-cdn-latest.tar.gz"
   },
   "dependencies": {
-    "body-parser": "^1.19.1",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.0",
-    "express": "^4.17.2",
-    "express-rate-limit": "^6.2.0",
-    "helmet": "^5.0.2",
-    "sharp": "^0.30.4"
+    "body-parser": "1.20.1",
+    "cors": "2.8.5",
+    "dotenv": "16.0.3",
+    "express": "4.18.2",
+    "express-rate-limit": "6.7.0",
+    "helmet": "6.0.1",
+    "sharp": "0.31.2"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.12",
-    "@types/express": "^4.17.13",
-    "@types/jest": "^27.5.1",
-    "@types/node": "16",
-    "@types/sharp": "^0.30.2",
-    "@typescript-eslint/eslint-plugin": "^5.25.0",
-    "@typescript-eslint/parser": "^5.25.0",
-    "axios": "^0.27.2",
-    "eslint": "^8.15.0",
-    "husky": "^7.0.4",
-    "jest": "^28.1.0",
-    "ts-jest": "^28.0.2",
-    "ts-node-dev": "^1.1.8",
-    "typescript": "^4.5.5"
+    "@types/cors": "2.8.13",
+    "@types/express": "4.17.15",
+    "@types/jest": "29.2.4",
+    "@types/node": "18.11.16",
+    "@types/sharp": "0.31.0",
+    "@typescript-eslint/eslint-plugin": "5.46.1",
+    "@typescript-eslint/parser": "5.46.1",
+    "axios": "1.2.1",
+    "eslint": "8.30.0",
+    "husky": "8.0.2",
+    "jest": "29.3.1",
+    "ts-jest": "29.0.3",
+    "ts-node-dev": "2.0.0",
+    "typescript": "4.9.4"
   }
 }
