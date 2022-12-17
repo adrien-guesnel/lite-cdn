@@ -2,28 +2,34 @@ name: Pull request
 
 on: pull_request
 
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   pull-request:
     runs-on: ubuntu-latest
 
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: 🔧 Set up Node 18.12.1
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: "18.12.1"
 
       - name: 🔎 Check node_modules in cache
-        uses: actions/cache@v2
-        id: modules-cache
+        uses: actions/cache@v3
+        id: cache-node-modules
+        env:
+          cache-name: cache-node-modules
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles(format('{0}{1}', github.workspace, '/yarn.lock')) }}
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
 
       - name: 📦 Install dependencies
-        if: steps.modules-cache.outputs.cache-hit != 'true'
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: yarn install
 
       - name: 🕵️‍♂️ Verify lint
