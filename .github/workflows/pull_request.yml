@@ -10,10 +10,10 @@ jobs:
       - name: ⬇️ Checkout code
         uses: actions/checkout@v2
 
-      - name: 🔧 Set up Node 16.13.2
+      - name: 🔧 Set up Node 18.12.1
         uses: actions/setup-node@v1
         with:
-          node-version: "16.13.2"
+          node-version: "18.12.1"
 
       - name: 🔎 Check node_modules in cache
         uses: actions/cache@v2
