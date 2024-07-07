@@ -1,15 +1,22 @@
+FROM node:20-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+ARG NODE_AUTH_TOKEN
+WORKDIR /usr/app
+
 # Install all node_modules and build the project
-FROM node:18.12.1-alpine AS build
+FROM base AS build
 
 WORKDIR /usr/app
-COPY package.json yarn.lock ./
-RUN yarn install 
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install 
 
 COPY . .
-RUN yarn build
-RUN yarn install --prod
+RUN pnpm build
+RUN pnpm install --prod
 
-FROM node:18.12.1-alpine AS prod
+FROM node:20-alpine AS prod
 
 WORKDIR /usr/app
 

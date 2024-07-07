@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { existsSync } from "fs";
 
 export async function saveImage(
   imgData: Buffer | string,
@@ -29,4 +30,9 @@ export async function getResizedImage(
       fit: "inside",
     })
     .toBuffer();
+}
+export function fileExist(filepath: string) {
+  if (!existsSync(filepath)) {
+    throw new Error("File not found");
+  }
 }
