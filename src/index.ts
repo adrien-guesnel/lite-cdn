@@ -7,12 +7,12 @@ import fs from "fs";
 import helmet from "helmet";
 import path from "path";
 import sharp from "sharp";
-import { getResizedImage, saveImage } from "./utils";
+import { fileExist, getResizedImage, saveImage } from "./utils/utils";
+import { verifyKey } from "./utils/auth";
 
 dotenv.config();
 
 const PORT = 11111;
-const API_SECRET = process.env.API_SECRET || "defaultSecret";
 const APP_ORIGIN = process.env.APP_ORIGIN || "*";
 const CACHE_DURATION = Number(process.env.CACHE_DURATION) || 300;
 const SAVE_MAX_HEIGHT = Number(process.env.SAVE_MAX_HEIGHT) || 1080;
@@ -52,10 +52,7 @@ app.get("/img/:file", async function (req, res) {
   const file = req.params.file;
   const filepath = path.resolve(`public/images/${file}`);
 
-  if (!fs.existsSync(filepath)) {
-    res.status(404).send("Image not found");
-    return;
-  }
+  fileExist(filepath);
 
   const { h, w } = req.query;
 
@@ -78,12 +75,9 @@ app.get("/img/:file", async function (req, res) {
 app.post("/img/:name", apiLimiter, async function (req, res) {
   const filename = req.params.name;
   const imgData = req.body;
-  const { key } = req.query;
+  const { key } = req.headers;
 
-  if (key !== API_SECRET) {
-    res.status(403).send("You are unauthorized to upload image");
-    return;
-  }
+  verifyKey(key as string);
 
   if (!filename) {
     res.status(500).send("No filename found");
@@ -99,7 +93,11 @@ app.post("/img/:name", apiLimiter, async function (req, res) {
 
   try {
     await saveImage(imgData, filepath, SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT);
-    res.send("ok");
+    console.log(`Image saved : ${filename}`);
+    res.send({
+      status: "ok",
+      filename,
+    });
   } catch (error) {
     console.error(error);
     res
@@ -111,20 +109,14 @@ app.post("/img/:name", apiLimiter, async function (req, res) {
 });
 
 app.delete("/img/:filename", apiLimiter, function (req, res) {
-  const { key } = req.query;
+  const { key } = req.headers;
 
   const filename = req.params.filename;
   const filepath = path.resolve(`public/images/${filename}`);
 
-  if (key !== API_SECRET) {
-    res.status(403).send("You are unauthorized to delete image");
-    return;
-  }
+  verifyKey(key as string);
 
-  if (!fs.existsSync(filepath)) {
-    res.status(404).send("Image not found");
-    return;
-  }
+  fileExist(filepath);
 
   fs.unlink(filepath, function (err) {
     if (err) return console.error(err);
