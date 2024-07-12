@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpException,
   HttpStatus,
   Param,
@@ -31,10 +32,7 @@ export class ImagesController {
     if (!isFileExists) {
       console.error(`Image ${filename} not found`);
 
-      throw new HttpException(
-        'File not found',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('File not found', HttpStatus.NOT_FOUND);
     }
 
     console.info(`Deliver image ${filename}`);
@@ -61,7 +59,17 @@ export class ImagesController {
   @Post()
   async addImage(
     @Body() data: any,
+    @Headers('key') key: string,
   ): Promise<{ status: string; filename: string }> {
+    try {
+      this.imagesServices.verifyKey(key);
+    } catch (error) {
+      throw new HttpException(
+        'You are unauthorized',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
     if (!data) {
       console.error(`No img data found into the request`);
       throw new HttpException(
@@ -102,17 +110,26 @@ export class ImagesController {
 
   @Throttle({ default: { limit: 3, ttl: 10000 } })
   @Delete(':filename')
-  async deleteImage(@Param('filename') filename: string) {
+  async deleteImage(
+    @Param('filename') filename: string,
+    @Headers('key') key: string,
+  ) {
+    try {
+      this.imagesServices.verifyKey(key);
+    } catch (error) {
+      throw new HttpException(
+        'You are unauthorized',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
     const filepath = this.imagesServices.getFilepath(filename);
     const isFileExists = this.imagesServices.isFileExists(filepath);
 
     if (!isFileExists) {
       console.error(`Image ${filename} not found`);
 
-      throw new HttpException(
-        'File not found',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('File not found', HttpStatus.NOT_FOUND);
     }
 
     try {

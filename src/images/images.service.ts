@@ -1,10 +1,13 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { existsSync, unlink } from 'fs';
 import * as path from 'path';
 import * as sharp from 'sharp';
 
 @Injectable()
 export class ImagesService {
+  constructor(private configService: ConfigService) {}
+
   getFilepath(filename: string) {
     return path.resolve(`public/images/${filename}`);
   }
@@ -51,5 +54,14 @@ export class ImagesService {
         return resolve(true);
       });
     });
+  }
+
+  verifyKey(key: string) {
+    const API_SECRET = this.configService.get<string>('API_SECRET');
+
+    if (key !== API_SECRET) {
+      console.error('You are unauthorized');
+      throw new Error('You are unauthorized');
+    }
   }
 }
