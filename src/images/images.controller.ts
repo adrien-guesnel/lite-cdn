@@ -100,9 +100,31 @@ export class ImagesController {
     }
   }
 
-  // @Throttle({ default: { limit: 3, ttl: 10000 } })
-  // @Delete()
-  // deleteImage(): string {
-  //   return this.imagesServices.deleteImage();
-  // }
+  @Throttle({ default: { limit: 3, ttl: 10000 } })
+  @Delete(':filename')
+  async deleteImage(@Param('filename') filename: string) {
+    const filepath = this.imagesServices.getFilepath(filename);
+    const isFileExists = this.imagesServices.isFileExists(filepath);
+
+    if (!isFileExists) {
+      console.error(`Image ${filename} not found`);
+
+      throw new HttpException(
+        'File not found',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    try {
+      await this.imagesServices.deleteImage(filepath);
+      return 'ok';
+    } catch (error) {
+      console.error(error);
+
+      throw new HttpException(
+        'Error during delete of your image.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

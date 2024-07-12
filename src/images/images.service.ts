@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { existsSync } from 'fs';
+import { existsSync, unlink } from 'fs';
 import * as path from 'path';
 import * as sharp from 'sharp';
 
@@ -44,46 +44,12 @@ export class ImagesService {
       .toFile(filepath);
   }
 
-  addImage() {
-    // const filename = req.params.name;
-    // const imgData = req.body;
-    // const { key } = req.headers;
-    // verifyKey(key as string);
-    // if (!filename) {
-    //   res.status(500).send('No filename found');
-    //   return;
-    // }
-    // if (!imgData || JSON.stringify(imgData) === '{}') {
-    //   res.status(500).send('No img data found into the request');
-    //   return;
-    // }
-    // const filepath = path.resolve(`public/images/${filename}`);
-    // try {
-    //   await saveImage(imgData, filepath, SAVE_MAX_WIDTH, SAVE_MAX_HEIGHT);
-    //   console.log(`Image saved : ${filename}`);
-    //   res.send({
-    //     status: 'ok',
-    //     filename,
-    //   });
-    // } catch (error) {
-    //   console.error(error);
-    //   res
-    //     .status(500)
-    //     .send(
-    //       'Error during upload of your image. Please check that your image is JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG type and below 10Mb.',
-    //     );
-    // }
-  }
-
-  deleteImage() {
-    // const { key } = req.headers;
-    // const filename = req.params.filename;
-    // const filepath = path.resolve(`public/images/${filename}`);
-    // verifyKey(key as string);
-    // fileExist(filepath);
-    // fs.unlink(filepath, function (err) {
-    //   if (err) return console.error(err);
-    //   res.send('ok');
-    // });
+  deleteImage(filepath: string) {
+    return new Promise((resolve, reject) => {
+      unlink(filepath, function (err) {
+        if (err) reject(err);
+        return resolve(true);
+      });
+    });
   }
 }
