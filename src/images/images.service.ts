@@ -16,13 +16,8 @@ export class ImagesService {
     return metadata;
   }
 
-  fileExist(filepath: string) {
-    if (!existsSync(filepath)) {
-      throw new HttpException(
-        'File not found',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  isFileExists(filepath: string) {
+    return existsSync(filepath);
   }
 
   async getResizedImage(filepath: string, width?: unknown, height?: unknown) {
@@ -34,14 +29,11 @@ export class ImagesService {
       .toBuffer();
   }
 
-  async saveImage(
-    imgData: Buffer | string,
-    filepath: string,
-    maxWidth: number,
-    maxHeight: number,
-  ) {
+  async saveImage(imgData: Buffer | string, filepath: string) {
     const image = await sharp(imgData);
     const metadata = await image.metadata();
+    const maxWidth = 1920;
+    const maxHeight = 1080;
 
     await image
       .resize(maxWidth, maxHeight, {
