@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { existsSync, unlink } from 'fs';
 import * as path from 'path';
@@ -6,7 +6,12 @@ import * as sharp from 'sharp';
 
 @Injectable()
 export class ImagesService {
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private logger: Logger,
+  ) {}
+
+  SERVICE: string = ImagesService.name;
 
   getFilepath(filename: string) {
     return path.resolve(`public/images/${filename}`);
@@ -16,11 +21,16 @@ export class ImagesService {
     const image = await sharp(filepath);
     const metadata = await image.metadata();
 
+    this.logger.debug(metadata, this.SERVICE);
+
     return metadata;
   }
 
   isFileExists(filepath: string) {
-    return existsSync(filepath);
+    const isExists = existsSync(filepath);
+
+    this.logger.debug(`File ${filepath} exists: ${isExists}`, this.SERVICE);
+    return isExists;
   }
 
   async getResizedImage(filepath: string, width?: unknown, height?: unknown) {
@@ -35,8 +45,8 @@ export class ImagesService {
   async saveImage(imgData: Buffer | string, filepath: string) {
     const image = await sharp(imgData);
     const metadata = await image.metadata();
-    const maxWidth = 1920;
-    const maxHeight = 1080;
+    const maxWidth = this.configService.get<number>('saveMaxWidth');
+    const maxHeight = this.configService.get<number>('saveMaxHeight');
 
     await image
       .resize(maxWidth, maxHeight, {
@@ -60,7 +70,7 @@ export class ImagesService {
     const API_SECRET = this.configService.get<string>('API_SECRET');
 
     if (key !== API_SECRET) {
-      console.error('You are unauthorized');
+      this.logger.error('You are unauthorized');
       throw new Error('You are unauthorized');
     }
   }

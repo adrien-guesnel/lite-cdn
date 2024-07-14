@@ -3,9 +3,11 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Headers,
   HttpException,
   HttpStatus,
+  Logger,
   Param,
   Post,
   Query,
@@ -18,9 +20,13 @@ import { randomUUID } from 'crypto';
 
 @Controller('img')
 export class ImagesController {
-  constructor(private readonly imagesServices: ImagesService) {}
+  constructor(
+    private readonly imagesServices: ImagesService,
+    private logger: Logger,
+  ) {}
 
   @Get(':filename')
+  @Header('Cache-Control', 'max-age=3600')
   async getImage(
     @Param('filename') filename: string,
     @Query('h') height?: number,
@@ -30,15 +36,15 @@ export class ImagesController {
     const isFileExists = this.imagesServices.isFileExists(filepath);
 
     if (!isFileExists) {
-      console.error(`Image ${filename} not found`);
+      this.logger.error(`Image ${filename} not found`);
 
       throw new HttpException('File not found', HttpStatus.NOT_FOUND);
     }
 
-    console.info(`Deliver image ${filename}`);
-
     if (!height && !weight) {
       const file = createReadStream(filepath);
+      this.logger.log(`Deliver image ${filename}`);
+
       return new StreamableFile(file);
     }
 
@@ -48,6 +54,8 @@ export class ImagesController {
       weight,
       height,
     );
+
+    this.logger.log(`Deliver image ${filename}`);
 
     return new StreamableFile(buffer, {
       type: metadata.format as string,
@@ -71,7 +79,7 @@ export class ImagesController {
     }
 
     if (!data) {
-      console.error(`No img data found into the request`);
+      this.logger.error(`No img data found into the request`);
       throw new HttpException(
         'No img data found into the request',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -82,7 +90,7 @@ export class ImagesController {
     const filepath = this.imagesServices.getFilepath(filename);
     const isFileExists = this.imagesServices.isFileExists(filepath);
     if (isFileExists) {
-      console.error(`Image ${filename} exists already`);
+      this.logger.error(`Image ${filename} exists already`);
 
       throw new HttpException(
         'Image exists already',
@@ -92,14 +100,14 @@ export class ImagesController {
 
     try {
       await this.imagesServices.saveImage(data, filepath);
-      console.log(`Image saved : ${filename}`);
+      this.logger.log(`Image saved : ${filename}`);
 
       return {
         status: 'ok',
         filename,
       };
     } catch (error) {
-      console.error(error);
+      this.logger.error(error);
 
       throw new HttpException(
         'Error during upload of your image. Please check that your image is JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG type and below 10Mb.',
@@ -127,16 +135,17 @@ export class ImagesController {
     const isFileExists = this.imagesServices.isFileExists(filepath);
 
     if (!isFileExists) {
-      console.error(`Image ${filename} not found`);
+      this.logger.error(`Image ${filename} not found`);
 
       throw new HttpException('File not found', HttpStatus.NOT_FOUND);
     }
 
     try {
       await this.imagesServices.deleteImage(filepath);
+      this.logger.log(`Image ${filename} deleted`);
       return 'ok';
     } catch (error) {
-      console.error(error);
+      this.logger.error(error);
 
       throw new HttpException(
         'Error during delete of your image.',
