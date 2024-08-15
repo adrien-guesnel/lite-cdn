@@ -6,15 +6,33 @@ A lite webserver to transform JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG images in
 
 ```bash
 nvm use
-yarn install
+pnpm install
 ```
 
-## Dev
-
-You can run the project for development purpose with auto-restart after files changes.
+## Running the app
 
 ```bash
-yarn dev
+# development
+$ pnpm run start
+
+# watch mode
+$ pnpm run start:dev
+
+# production mode
+$ pnpm run start:prod
+```
+
+## Test
+
+```bash
+# unit tests
+$ pnpm run test
+
+# e2e tests
+$ pnpm run test:e2e
+
+# test coverage
+$ pnpm run test:cov
 ```
 
 ## Using
@@ -28,4 +46,4 @@ Please open an issue first to discuss what you would like to change.
 
 ## License
 
-[MIT](./LICENSE)
+Lite cdn is [MIT licensed](LICENSE).

@@ -1,28 +1,57 @@
 FROM node:20-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-ARG NODE_AUTH_TOKEN
-WORKDIR /usr/app
+WORKDIR /app
+
+# Install dependencies only when needed
+FROM base AS deps
+# Install dependencies based on the preferred package manager
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
+
+# Install prod dependencies only when needed
+FROM base AS deps_prod
+# Install dependencies based on the preferred package manager
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile --production; \
+  elif [ -f package-lock.json ]; then npm ci --only=production; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile --prod; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
 # Install all node_modules and build the project
 FROM base AS build
 
-WORKDIR /usr/app
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install 
-
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm build
-RUN pnpm install --prod
 
-FROM node:20-alpine AS prod
+RUN \
+  if [ -f yarn.lock ]; then yarn run build; \
+  elif [ -f package-lock.json ]; then npm run build; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-WORKDIR /usr/app
 
-COPY --from=build /usr/app/dist ./
-COPY --from=build /usr/app/node_modules ./node_modules
+FROM base AS prod
+
+ENV NODE_ENV="production"
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+
+RUN mkdir logs
+RUN chown nestjs:nodejs logs
+
+COPY --from=deps_prod --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
+
+USER nestjs
 
 EXPOSE 11111
 
-CMD node ./index.js
+CMD [ "node", "dist/src/main" ]
