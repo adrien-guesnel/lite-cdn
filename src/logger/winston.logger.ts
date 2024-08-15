@@ -43,6 +43,7 @@ const prodLogger = {
       filename: 'logs/combine.log',
       level: 'info',
     }),
+    new transports.Console({ level: 'info' }),
   ],
 };
 
