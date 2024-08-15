@@ -72,6 +72,7 @@ export class ImagesController {
     try {
       this.imagesServices.verifyKey(key);
     } catch (error) {
+      this.logger.error(`Unauthorized access with key ${key}`);
       throw new HttpException(
         'You are unauthorized',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -100,7 +101,7 @@ export class ImagesController {
 
     try {
       await this.imagesServices.saveImage(data, filepath);
-      this.logger.log(`Image saved : ${filename}`);
+      this.logger.debug(`Image saved : ${filename}`);
 
       return {
         status: 'ok',
@@ -125,6 +126,8 @@ export class ImagesController {
     try {
       this.imagesServices.verifyKey(key);
     } catch (error) {
+      this.logger.error(`Unauthorized access with key ${key}`);
+
       throw new HttpException(
         'You are unauthorized',
         HttpStatus.INTERNAL_SERVER_ERROR,

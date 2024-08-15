@@ -4,12 +4,12 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
-import helmet from '@fastify/helmet';
 import { ConfigService } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import { instance } from './logger/winston.logger';
 import { loggerMiddleware } from './logger/logger.middleware';
 import { Logger } from '@nestjs/common';
+import helmet from '@fastify/helmet';
 
 async function bootstrap() {
   const logger = new Logger();
@@ -39,7 +39,10 @@ async function bootstrap() {
   );
   const configService = app.get(ConfigService);
 
-  await app.register(helmet);
+  await app.register(helmet, {
+    crossOriginResourcePolicy: { policy: 'same-site' },
+  });
+
   app.enableCors({
     origin: configService.get('allowedOrigins'),
     credentials: true,

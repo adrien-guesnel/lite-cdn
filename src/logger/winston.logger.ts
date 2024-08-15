@@ -1,8 +1,12 @@
 import { createLogger, format, transports } from 'winston';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const LokiTransport = require('winston-loki');
 
 // custom log display format
 const customFormat = format.printf(({ timestamp, level, stack, message }) => {
-  return `${timestamp} - [${level.toUpperCase().padEnd(7)}] - ${message} ${stack ? `\n${stack}` : ''}`;
+  return `${timestamp} - [${level.toUpperCase().padEnd(7)}] - ${message} ${
+    stack ? `\n${stack}` : ''
+  }`;
 });
 
 const options = {
@@ -41,6 +45,17 @@ const prodLogger = {
     }),
   ],
 };
+
+if (process.env.LOKI_URL) {
+  prodLogger.transports.push(
+    new LokiTransport({
+      host: process.env.LOKI_URL,
+      labels: { app: 'lite-cdn' },
+      json: true,
+      format: format.json(),
+    }),
+  );
+}
 
 // export log instance based on the current environment
 const instanceLogger =
