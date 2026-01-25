@@ -55,6 +55,8 @@ export class ImagesService {
       })
       .toFormat('webp')
       .toFile(filepath);
+
+    return 'webp';
   }
 
   deleteImage(filepath: string) {
@@ -64,6 +66,32 @@ export class ImagesService {
         return resolve(true);
       });
     });
+  }
+
+  resolveFilepath(filename: string): string | null {
+    // First try the filename as-is
+    let filepath = this.getFilepath(filename);
+    if (this.isFileExists(filepath)) {
+      return filepath;
+    }
+
+    // If not found and filename has an extension, try without extension
+    const lastDotIndex = filename.lastIndexOf('.');
+    if (lastDotIndex > 0) {
+      const filenameWithoutExt = filename.substring(0, lastDotIndex);
+      filepath = this.getFilepath(filenameWithoutExt);
+      if (this.isFileExists(filepath)) {
+        return filepath;
+      }
+    }
+
+    // If not found and filename doesn't have extension, try with .webp
+    filepath = this.getFilepath(`${filename}.webp`);
+    if (this.isFileExists(filepath)) {
+      return filepath;
+    }
+
+    return null;
   }
 
   verifyKey(key: string) {

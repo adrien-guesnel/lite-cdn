@@ -32,10 +32,9 @@ export class ImagesController {
     @Query('h') height?: number,
     @Query('w') weight?: number,
   ): Promise<StreamableFile> {
-    const filepath = this.imagesServices.getFilepath(filename);
-    const isFileExists = this.imagesServices.isFileExists(filepath);
+    const filepath = this.imagesServices.resolveFilepath(filename);
 
-    if (!isFileExists) {
+    if (!filepath) {
       this.logger.error(`Image ${filename} not found`);
 
       throw new HttpException('File not found', HttpStatus.NOT_FOUND);
@@ -100,12 +99,12 @@ export class ImagesController {
     }
 
     try {
-      await this.imagesServices.saveImage(data, filepath);
+      const format = await this.imagesServices.saveImage(data, filepath);
       this.logger.debug(`Image saved : ${filename}`);
 
       return {
         status: 'ok',
-        filename,
+        filename: `${filename}.${format}`,
       };
     } catch (error) {
       this.logger.error(error);
@@ -134,10 +133,9 @@ export class ImagesController {
       );
     }
 
-    const filepath = this.imagesServices.getFilepath(filename);
-    const isFileExists = this.imagesServices.isFileExists(filepath);
+    const filepath = this.imagesServices.resolveFilepath(filename);
 
-    if (!isFileExists) {
+    if (!filepath) {
       this.logger.error(`Image ${filename} not found`);
 
       throw new HttpException('File not found', HttpStatus.NOT_FOUND);
