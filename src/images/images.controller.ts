@@ -12,11 +12,13 @@ import {
   Post,
   Query,
   StreamableFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { ImagesService } from './images.service';
 import { createReadStream } from 'fs';
 import { Throttle } from '@nestjs/throttler';
 import { randomUUID } from 'crypto';
+import { UploadImageDto } from './dto/upload-image.dto';
 
 @Controller('img')
 export class ImagesController {
@@ -32,10 +34,14 @@ export class ImagesController {
     @Query('h') height?: number,
     @Query('w') weight?: number,
   ): Promise<StreamableFile> {
+    if (!filename) {
+      throw new BadRequestException('Filename is required');
+    }
+
     const filepath = this.imagesServices.resolveFilepath(filename);
 
     if (!filepath) {
-      this.logger.error(`Image ${filename} not found`);
+      this.logger.warn(`Image ${filename} not found`);
 
       throw new HttpException('File not found', HttpStatus.NOT_FOUND);
     }
@@ -47,109 +53,156 @@ export class ImagesController {
       return new StreamableFile(file);
     }
 
-    const metadata = await this.imagesServices.getImageMetadata(filepath);
-    const buffer = await this.imagesServices.getResizedImage(
-      filepath,
-      weight,
-      height,
-    );
-
-    this.logger.log(`Deliver image ${filename}`);
-
-    return new StreamableFile(buffer, {
-      type: metadata.format as string,
-      disposition: 'attachment; filename="' + filename + '"',
-    });
-  }
-
-  @Throttle({ default: { limit: 3, ttl: 10000 } })
-  @Post()
-  async addImage(
-    @Body() data: any,
-    @Headers('key') key: string,
-  ): Promise<{ status: string; filename: string }> {
     try {
-      this.imagesServices.verifyKey(key);
+      const metadata = await this.imagesServices.getImageMetadata(filepath);
+      const buffer = await this.imagesServices.getResizedImage(
+        filepath,
+        weight,
+        height,
+      );
+
+      this.logger.log(
+        `Deliver resized image ${filename} (${weight}x${height})`,
+      );
+
+      return new StreamableFile(buffer, {
+        type: metadata.format as string,
+        disposition: 'attachment; filename="' + filename + '"',
+      });
     } catch (error) {
-      this.logger.error(`Unauthorized access with key ${key}`);
+      this.logger.error(
+        `Error processing image ${filename}: ${error.message}`,
+      );
+
       throw new HttpException(
-        'You are unauthorized',
+        'Error processing image',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
 
-    if (!data) {
-      this.logger.error(`No img data found into the request`);
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post()
+  async addImage(
+    @Body() data: UploadImageDto,
+    @Headers('key') key: string,
+  ): Promise<{ status: string; filename: string }> {
+    if (!key) {
+      this.logger.warn('Upload attempt without API key');
+
       throw new HttpException(
-        'No img data found into the request',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        'API key required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    try {
+      this.imagesServices.verifyKey(key);
+    } catch (error) {
+      this.logger.warn(`Unauthorized upload attempt`);
+
+      throw new HttpException(
+        'Invalid API key',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (!data || !data.file) {
+      this.logger.warn(`Upload attempt with no image data`);
+
+      throw new HttpException(
+        'No image data provided',
+        HttpStatus.BAD_REQUEST,
       );
     }
 
     const filename = randomUUID();
     const filepath = this.imagesServices.getFilepath(filename);
     const isFileExists = this.imagesServices.isFileExists(filepath);
+
     if (isFileExists) {
-      this.logger.error(`Image ${filename} exists already`);
+      this.logger.warn(`Image ${filename} already exists (UUID collision)`);
 
       throw new HttpException(
-        'Image exists already',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        'File already exists (please retry)',
+        HttpStatus.CONFLICT,
       );
     }
 
     try {
-      const format = await this.imagesServices.saveImage(data, filepath);
-      this.logger.debug(`Image saved : ${filename}`);
+      const format = await this.imagesServices.saveImage(data.file, filepath);
+      this.logger.log(`Image uploaded successfully: ${filename}.${format}`);
 
       return {
         status: 'ok',
         filename: `${filename}.${format}`,
       };
     } catch (error) {
-      this.logger.error(error);
+      if (error instanceof BadRequestException) {
+        this.logger.warn(
+          `Image upload validation failed for ${filename}: ${error.message}`,
+        );
+
+        throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      }
+
+      this.logger.error(`Image upload failed for ${filename}: ${error.message}`);
 
       throw new HttpException(
-        'Error during upload of your image. Please check that your image is JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG type and below 10Mb.',
+        'Error during image upload. Please check that your image is in a supported format (JPEG, PNG, WebP, GIF, AVIF, TIFF, SVG) and under the size limit.',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  @Throttle({ default: { limit: 3, ttl: 10000 } })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Delete(':filename')
   async deleteImage(
     @Param('filename') filename: string,
     @Headers('key') key: string,
-  ) {
+  ): Promise<{ status: string }> {
+    if (!key) {
+      this.logger.warn(`Delete attempt without API key`);
+
+      throw new HttpException(
+        'API key required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     try {
       this.imagesServices.verifyKey(key);
     } catch (error) {
-      this.logger.error(`Unauthorized access with key ${key}`);
+      this.logger.warn(`Unauthorized delete attempt`);
 
       throw new HttpException(
-        'You are unauthorized',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        'Invalid API key',
+        HttpStatus.UNAUTHORIZED,
       );
+    }
+
+    if (!filename) {
+      throw new BadRequestException('Filename is required');
     }
 
     const filepath = this.imagesServices.resolveFilepath(filename);
 
     if (!filepath) {
-      this.logger.error(`Image ${filename} not found`);
+      this.logger.warn(`Delete attempt for non-existent image: ${filename}`);
 
       throw new HttpException('File not found', HttpStatus.NOT_FOUND);
     }
 
     try {
       await this.imagesServices.deleteImage(filepath);
-      this.logger.log(`Image ${filename} deleted`);
-      return 'ok';
+      this.logger.log(`Image deleted: ${filename}`);
+
+      return { status: 'ok' };
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`Failed to delete image ${filename}: ${error.message}`);
 
       throw new HttpException(
-        'Error during delete of your image.',
+        'Error during image deletion',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
