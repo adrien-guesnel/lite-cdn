@@ -1,25 +1,26 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { existsSync, unlink, statSync } from 'fs';
-import * as path from 'path';
-import * as sharp from 'sharp';
+import { existsSync, unlink } from "node:fs";
+import * as path from "node:path";
+
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as sharp from "sharp";
 
 @Injectable()
 export class ImagesService {
   private readonly ALLOWED_FORMATS = [
-    'jpeg',
-    'png',
-    'webp',
-    'gif',
-    'avif',
-    'tiff',
-    'svg',
+    "jpeg",
+    "png",
+    "webp",
+    "gif",
+    "avif",
+    "tiff",
+    "svg",
   ];
-  private readonly publicImagesDir = path.resolve('public/images');
+  private readonly publicImagesDir = path.resolve("public/images");
 
   constructor(
     private configService: ConfigService,
-    private logger: Logger,
+    private logger: Logger
   ) {}
 
   SERVICE: string = ImagesService.name;
@@ -29,18 +30,28 @@ export class ImagesService {
    */
   private validateFilename(filename: string): void {
     // Reject if filename contains path traversal patterns
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-      throw new BadRequestException('Invalid filename: path traversal detected');
+    if (
+      filename.includes("..") ||
+      filename.includes("/") ||
+      filename.includes("\\")
+    ) {
+      throw new BadRequestException(
+        "Invalid filename: path traversal detected"
+      );
     }
 
     // Reject if filename is empty or too long
     if (!filename || filename.length > 255) {
-      throw new BadRequestException('Invalid filename: must be between 1 and 255 characters');
+      throw new BadRequestException(
+        "Invalid filename: must be between 1 and 255 characters"
+      );
     }
 
     // Only allow alphanumeric, hyphens, underscores, and dots
     if (!/^[a-zA-Z0-9._-]+$/.test(filename)) {
-      throw new BadRequestException('Invalid filename: only alphanumeric, dots, hyphens and underscores allowed');
+      throw new BadRequestException(
+        "Invalid filename: only alphanumeric, dots, hyphens and underscores allowed"
+      );
     }
   }
 
@@ -50,7 +61,7 @@ export class ImagesService {
   private securePath(filepath: string): void {
     const resolved = path.resolve(filepath);
     if (!resolved.startsWith(this.publicImagesDir)) {
-      throw new BadRequestException('Invalid file path');
+      throw new BadRequestException("Invalid file path");
     }
   }
 
@@ -67,7 +78,7 @@ export class ImagesService {
 
     this.logger.debug(
       `Image metadata: format=${metadata.format}, size=${metadata.width}x${metadata.height}`,
-      this.SERVICE,
+      this.SERVICE
     );
 
     return metadata;
@@ -77,7 +88,7 @@ export class ImagesService {
     const isExists = existsSync(filepath);
     this.logger.debug(
       `File ${path.basename(filepath)} exists: ${isExists}`,
-      this.SERVICE,
+      this.SERVICE
     );
     return isExists;
   }
@@ -85,37 +96,34 @@ export class ImagesService {
   async getResizedImage(
     filepath: string,
     width?: unknown,
-    height?: unknown,
+    height?: unknown
   ): Promise<Buffer> {
     const startTime = Date.now();
     const buffer = await sharp(filepath)
       .resize(Number(height) || null, Number(width) || null, {
         withoutEnlargement: true,
-        fit: 'inside',
+        fit: "inside",
       })
       .toBuffer();
 
     const duration = Date.now() - startTime;
     this.logger.debug(
       `Resize operation completed in ${duration}ms (${width}x${height})`,
-      this.SERVICE,
+      this.SERVICE
     );
 
     return buffer;
   }
 
-  async saveImage(
-    imgData: Buffer | string,
-    filepath: string,
-  ): Promise<string> {
-    const maxFileSize = this.configService.get<number>('maxFileSize');
+  async saveImage(imgData: Buffer | string, filepath: string): Promise<string> {
+    const maxFileSize = this.configService.get<number>("maxFileSize");
     const startTime = Date.now();
 
     try {
       // Validate file size if it's a buffer
       if (Buffer.isBuffer(imgData) && imgData.length > maxFileSize) {
         throw new BadRequestException(
-          `File size exceeds maximum allowed size of ${maxFileSize / 1024 / 1024}MB`,
+          `File size exceeds maximum allowed size of ${maxFileSize / 1024 / 1024}MB`
         );
       }
 
@@ -125,28 +133,28 @@ export class ImagesService {
       // Validate image format
       if (!this.ALLOWED_FORMATS.includes(metadata.format)) {
         throw new BadRequestException(
-          `Unsupported image format: ${metadata.format}. Allowed formats: ${this.ALLOWED_FORMATS.join(', ')}`,
+          `Unsupported image format: ${metadata.format}. Allowed formats: ${this.ALLOWED_FORMATS.join(", ")}`
         );
       }
 
-      const maxWidth = this.configService.get<number>('saveMaxWidth');
-      const maxHeight = this.configService.get<number>('saveMaxHeight');
+      const maxWidth = this.configService.get<number>("saveMaxWidth");
+      const maxHeight = this.configService.get<number>("saveMaxHeight");
 
       await image
         .resize(maxWidth, maxHeight, {
-          withoutEnlargement: metadata.format === 'svg' ? false : true,
-          fit: 'inside',
+          withoutEnlargement: metadata.format !== "svg",
+          fit: "inside",
         })
-        .toFormat('webp')
+        .toFormat("webp")
         .toFile(filepath);
 
       const duration = Date.now() - startTime;
       this.logger.log(
         `Image saved successfully: ${path.basename(filepath)} (${duration}ms, original format: ${metadata.format})`,
-        this.SERVICE,
+        this.SERVICE
       );
 
-      return 'webp';
+      return "webp";
     } catch (error) {
       // Clean up partial file if it was created
       if (this.isFileExists(filepath)) {
@@ -154,12 +162,12 @@ export class ImagesService {
           await this.deleteImage(filepath);
           this.logger.warn(
             `Cleaned up partial file after save error: ${path.basename(filepath)}`,
-            this.SERVICE,
+            this.SERVICE
           );
         } catch (cleanupError) {
           this.logger.error(
             `Failed to clean up partial file: ${cleanupError.message}`,
-            this.SERVICE,
+            this.SERVICE
           );
         }
       }
@@ -169,7 +177,7 @@ export class ImagesService {
       }
 
       throw new BadRequestException(
-        `Error processing image: ${error.message || 'Unknown error'}`,
+        `Error processing image: ${error.message || "Unknown error"}`
       );
     }
   }
@@ -181,14 +189,14 @@ export class ImagesService {
         if (err) {
           this.logger.error(
             `Failed to delete image ${path.basename(filepath)}: ${err.message}`,
-            this.SERVICE,
+            this.SERVICE
           );
           reject(err);
         } else {
           const duration = Date.now() - startTime;
           this.logger.log(
             `Image deleted: ${path.basename(filepath)} (${duration}ms)`,
-            this.SERVICE,
+            this.SERVICE
           );
           resolve(true);
         }
@@ -207,10 +215,10 @@ export class ImagesService {
 
     try {
       this.validateFilename(filename);
-    } catch (error) {
+    } catch (_error) {
       this.logger.warn(
         `Invalid filename in resolveFilepath: ${filename}`,
-        this.SERVICE,
+        this.SERVICE
       );
       return null;
     }
@@ -221,13 +229,13 @@ export class ImagesService {
       const duration = Date.now() - startTime;
       this.logger.debug(
         `Resolved filename '${filename}' as-is (${duration}ms)`,
-        this.SERVICE,
+        this.SERVICE
       );
       return filepath;
     }
 
     // If not found and filename has an extension, try without extension
-    const lastDotIndex = filename.lastIndexOf('.');
+    const lastDotIndex = filename.lastIndexOf(".");
     if (lastDotIndex > 0) {
       const filenameWithoutExt = filename.substring(0, lastDotIndex);
       filepath = this.getFilepath(filenameWithoutExt);
@@ -235,7 +243,7 @@ export class ImagesService {
         const duration = Date.now() - startTime;
         this.logger.debug(
           `Resolved filename '${filename}' without extension (${duration}ms)`,
-          this.SERVICE,
+          this.SERVICE
         );
         return filepath;
       }
@@ -247,7 +255,7 @@ export class ImagesService {
       const duration = Date.now() - startTime;
       this.logger.debug(
         `Resolved filename '${filename}' with .webp extension (${duration}ms)`,
-        this.SERVICE,
+        this.SERVICE
       );
       return filepath;
     }
@@ -255,22 +263,25 @@ export class ImagesService {
     const duration = Date.now() - startTime;
     this.logger.warn(
       `Could not resolve filename '${filename}' (${duration}ms)`,
-      this.SERVICE,
+      this.SERVICE
     );
     return null;
   }
 
   verifyKey(key: string): void {
-    const API_SECRET = this.configService.get<string>('API_SECRET');
+    const API_SECRET = this.configService.get<string>("API_SECRET");
 
     if (!API_SECRET) {
-      this.logger.error('API_SECRET not configured', this.SERVICE);
-      throw new Error('Server configuration error');
+      this.logger.error("API_SECRET not configured", this.SERVICE);
+      throw new Error("Server configuration error");
     }
 
     if (key !== API_SECRET) {
-      this.logger.warn(`Unauthorized access attempt with invalid key`, this.SERVICE);
-      throw new BadRequestException('Invalid API key');
+      this.logger.warn(
+        `Unauthorized access attempt with invalid key`,
+        this.SERVICE
+      );
+      throw new BadRequestException("Invalid API key");
     }
   }
 }

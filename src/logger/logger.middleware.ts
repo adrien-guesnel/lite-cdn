@@ -1,5 +1,5 @@
-import { Logger } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { Logger } from "@nestjs/common";
+import type { NextFunction, Request, Response } from "express";
 
 function getDurationInMilliseconds(start) {
   const NS_PER_SEC = 1e9;
@@ -12,19 +12,19 @@ function getDurationInMilliseconds(start) {
 export function loggerMiddleware(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   const logger = new Logger();
   const start = process.hrtime();
 
   logger.debug(`${req.method} - ${req.originalUrl} - start`);
 
-  res.on('finish', () => {
+  res.on("finish", () => {
     const durationInMilliseconds = getDurationInMilliseconds(start);
     logger.log(
       `${req.method} ${
         req.originalUrl
-      } ${durationInMilliseconds.toLocaleString()} ms`,
+      } ${durationInMilliseconds.toLocaleString()} ms`
     );
   });
 

@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { ImagesModule } from './images/images.module';
-import configuration from './config/configuration';
-import { ConfigModule } from '@nestjs/config';
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+
+import { AppController } from "@src/app.controller";
+import { AppService } from "@src/app.service";
+import configuration from "@src/config/configuration";
+import { ImagesModule } from "@src/images/images.module";
 
 @Module({
   imports: [

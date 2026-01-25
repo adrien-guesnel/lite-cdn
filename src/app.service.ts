@@ -1,13 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { version } from '@/package.json';
+import { Injectable } from "@nestjs/common";
+
+import { version } from "@/package.json";
 
 @Injectable()
 export class AppService {
   getVersion(): string {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       return `Lite CDN v${version}`;
     }
 
-    return 'Lite CDN dev';
+    return "Lite CDN dev";
   }
 }

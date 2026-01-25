@@ -1,13 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { Test, type TestingModule } from "@nestjs/testing";
 
-// Mock the package.json
-jest.mock('@/package.json', () => ({
-  version: '1.0.0',
-}), { virtual: true });
+import { AppController } from "@src/app.controller";
+import { AppService } from "@src/app.service";
 
-describe('AppController', () => {
+describe("AppController", () => {
   let appController: AppController;
   let appService: AppService;
 
@@ -21,21 +17,21 @@ describe('AppController', () => {
     appService = app.get<AppService>(AppService);
   });
 
-  describe('root', () => {
+  describe("root", () => {
     it('should return "Lite CDN dev" in dev environment', () => {
-      expect(appController.getVersion()).toBe('Lite CDN dev');
+      delete process.env.NODE_ENV;
+      expect(appController.getVersion()).toBe("Lite CDN dev");
     });
 
-    it('should return version string in production environment', () => {
+    it("should return version string in production environment", () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      process.env.NODE_ENV = "production";
 
-      const result = appService.getVersion();
+      const result = appController.getVersion();
 
-      expect(result).toContain('Lite CDN v');
-      
+      expect(result).toContain("Lite CDN v");
+
       process.env.NODE_ENV = originalEnv;
     });
   });
 });
-

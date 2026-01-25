@@ -1,9 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ImagesController } from './images.controller';
-import { ImagesService } from './images.service';
-import { Logger, BadRequestException, HttpException } from '@nestjs/common';
+/* biome-ignore lint/suspicious/noExplicitAny: Mock objects in tests require any type */
 
-describe('ImagesController', () => {
+import { BadRequestException, HttpException, Logger } from "@nestjs/common";
+import { Test, TestingModule } from "@nestjs/testing";
+
+import { ImagesController } from "@src/images/images.controller";
+import { ImagesService } from "@src/images/images.service";
+
+describe("ImagesController", () => {
   let controller: ImagesController;
   let imagesService: ImagesService;
   let logger: Logger;
@@ -42,34 +45,34 @@ describe('ImagesController', () => {
     logger = module.get<Logger>(Logger);
   });
 
-  describe('GET /img/:filename', () => {
-    it('should reject request without filename', async () => {
+  describe("GET /img/:filename", () => {
+    it("should reject request without filename", async () => {
       try {
         await controller.getImage(undefined);
-        fail('Should have thrown');
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(BadRequestException);
-        expect(error.message).toContain('Filename is required');
+        expect(error.message).toContain("Filename is required");
       }
     });
 
-    it('should return 404 if file not found', async () => {
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(null);
+    it("should return 404 if file not found", async () => {
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(null);
 
       try {
-        await controller.getImage('nonexistent.jpg');
-        fail('Should have thrown');
+        await controller.getImage("nonexistent.jpg");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(404);
       }
     });
 
-    it('should log warning when file not found', async () => {
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(null);
+    it("should log warning when file not found", async () => {
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(null);
 
       try {
-        await controller.getImage('nonexistent.jpg');
+        await controller.getImage("nonexistent.jpg");
       } catch (e) {
         // Expected
       }
@@ -77,94 +80,94 @@ describe('ImagesController', () => {
       expect(logger.warn).toHaveBeenCalled();
     });
 
-    it('should call resolveFilepath for file retrieval', async () => {
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(null);
+    it("should call resolveFilepath for file retrieval", async () => {
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(null);
 
       try {
-        await controller.getImage('image.jpg');
+        await controller.getImage("image.jpg");
       } catch (e) {
         // Expected to throw 404
       }
 
-      expect(imagesService.resolveFilepath).toHaveBeenCalledWith('image.jpg');
+      expect(imagesService.resolveFilepath).toHaveBeenCalledWith("image.jpg");
     });
 
-    it('should resize image when width parameter provided', async () => {
-      const mockPath = '/path/to/file';
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(mockPath);
-      jest.spyOn(imagesService, 'getImageMetadata').mockResolvedValue({
-        format: 'webp',
+    it("should resize image when width parameter provided", async () => {
+      const mockPath = "/path/to/file";
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(mockPath);
+      jest.spyOn(imagesService, "getImageMetadata").mockResolvedValue({
+        format: "webp",
         width: 1920,
         height: 1080,
       } as any);
-      jest.spyOn(imagesService, 'getResizedImage').mockResolvedValue(
-        Buffer.from('resized'),
-      );
+      jest
+        .spyOn(imagesService, "getResizedImage")
+        .mockResolvedValue(Buffer.from("resized"));
 
-      const result = await controller.getImage('image.jpg', undefined, 800);
+      const result = await controller.getImage("image.jpg", undefined, 800);
 
       expect(result).toBeDefined();
       expect(imagesService.getResizedImage).toHaveBeenCalledWith(
         mockPath,
         800,
-        undefined,
+        undefined
       );
     });
 
-    it('should resize image when height parameter provided', async () => {
-      const mockPath = '/path/to/file';
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(mockPath);
-      jest.spyOn(imagesService, 'getImageMetadata').mockResolvedValue({
-        format: 'webp',
+    it("should resize image when height parameter provided", async () => {
+      const mockPath = "/path/to/file";
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(mockPath);
+      jest.spyOn(imagesService, "getImageMetadata").mockResolvedValue({
+        format: "webp",
         width: 1920,
         height: 1080,
       } as any);
-      jest.spyOn(imagesService, 'getResizedImage').mockResolvedValue(
-        Buffer.from('resized'),
-      );
+      jest
+        .spyOn(imagesService, "getResizedImage")
+        .mockResolvedValue(Buffer.from("resized"));
 
-      const result = await controller.getImage('image.jpg', 600);
+      const result = await controller.getImage("image.jpg", 600);
 
       expect(result).toBeDefined();
       expect(imagesService.getResizedImage).toHaveBeenCalledWith(
         mockPath,
         undefined,
-        600,
+        600
       );
     });
 
-    it('should resize image when both width and height provided', async () => {
-      const mockPath = '/path/to/file';
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(mockPath);
-      jest.spyOn(imagesService, 'getImageMetadata').mockResolvedValue({
-        format: 'webp',
+    it("should resize image when both width and height provided", async () => {
+      const mockPath = "/path/to/file";
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(mockPath);
+      jest.spyOn(imagesService, "getImageMetadata").mockResolvedValue({
+        format: "webp",
         width: 1920,
         height: 1080,
       } as any);
-      jest.spyOn(imagesService, 'getResizedImage').mockResolvedValue(
-        Buffer.from('resized'),
-      );
+      jest
+        .spyOn(imagesService, "getResizedImage")
+        .mockResolvedValue(Buffer.from("resized"));
 
-      const result = await controller.getImage('image.jpg', 600, 800);
+      const result = await controller.getImage("image.jpg", 600, 800);
 
       expect(result).toBeDefined();
       expect(imagesService.getResizedImage).toHaveBeenCalledWith(
         mockPath,
         800,
-        600,
+        600
       );
     });
 
-    it('should handle errors during image processing', async () => {
-      const mockPath = '/path/to/file';
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(mockPath);
-      jest.spyOn(imagesService, 'getImageMetadata').mockRejectedValue(
-        new Error('Invalid image'),
-      );
+    it("should handle errors during image processing", async () => {
+      const mockPath = "/path/to/file";
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(mockPath);
+      jest
+        .spyOn(imagesService, "getImageMetadata")
+        .mockRejectedValue(new Error("Invalid image"));
 
       try {
-        await controller.getImage('image.jpg', 600, 800);
-        fail('Should have thrown');
+        await controller.getImage("image.jpg", 600, 800);
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(500);
@@ -174,21 +177,21 @@ describe('ImagesController', () => {
     });
   });
 
-  describe('POST /img - addImage', () => {
-    it('should reject request without API key', async () => {
-      const dto = { file: Buffer.from('test') };
+  describe("POST /img - addImage", () => {
+    it("should reject request without API key", async () => {
+      const dto = { file: Buffer.from("test") };
 
       try {
         await controller.addImage(dto, undefined);
-        fail('Should have thrown');
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(401);
       }
     });
 
-    it('should log warning when no API key provided', async () => {
-      const dto = { file: Buffer.from('test') };
+    it("should log warning when no API key provided", async () => {
+      const dto = { file: Buffer.from("test") };
 
       try {
         await controller.addImage(dto, undefined);
@@ -199,89 +202,89 @@ describe('ImagesController', () => {
       expect(logger.warn).toHaveBeenCalled();
     });
 
-    it('should reject request with invalid API key', async () => {
-      const dto = { file: Buffer.from('test') };
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {
-        throw new BadRequestException('Invalid API key');
+    it("should reject request with invalid API key", async () => {
+      const dto = { file: Buffer.from("test") };
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {
+        throw new BadRequestException("Invalid API key");
       });
 
       try {
-        await controller.addImage(dto, 'invalid-key');
-        fail('Should have thrown');
+        await controller.addImage(dto, "invalid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(401);
       }
     });
 
-    it('should reject request without image data', async () => {
+    it("should reject request without image data", async () => {
       const dto = { file: undefined };
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
 
       try {
-        await controller.addImage(dto, 'valid-key');
-        fail('Should have thrown');
+        await controller.addImage(dto, "valid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(400);
       }
     });
 
-    it('should reject when file already exists (UUID collision)', async () => {
-      const dto = { file: Buffer.from('test') };
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'getFilepath').mockReturnValue('/path/file');
-      jest.spyOn(imagesService, 'isFileExists').mockReturnValue(true);
+    it("should reject when file already exists (UUID collision)", async () => {
+      const dto = { file: Buffer.from("test") };
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest.spyOn(imagesService, "getFilepath").mockReturnValue("/path/file");
+      jest.spyOn(imagesService, "isFileExists").mockReturnValue(true);
 
       try {
-        await controller.addImage(dto, 'valid-key');
-        fail('Should have thrown');
+        await controller.addImage(dto, "valid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(409);
       }
     });
 
-    it('should return filename with extension on successful upload', async () => {
-      const dto = { file: Buffer.from('test') };
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'getFilepath').mockReturnValue('/path/file');
-      jest.spyOn(imagesService, 'isFileExists').mockReturnValue(false);
-      jest.spyOn(imagesService, 'saveImage').mockResolvedValue('webp');
+    it("should return filename with extension on successful upload", async () => {
+      const dto = { file: Buffer.from("test") };
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest.spyOn(imagesService, "getFilepath").mockReturnValue("/path/file");
+      jest.spyOn(imagesService, "isFileExists").mockReturnValue(false);
+      jest.spyOn(imagesService, "saveImage").mockResolvedValue("webp");
 
-      const result = await controller.addImage(dto, 'valid-key');
+      const result = await controller.addImage(dto, "valid-key");
 
-      expect(result.status).toBe('ok');
+      expect(result.status).toBe("ok");
       expect(result.filename).toMatch(/\.webp$/);
       expect(logger.log).toHaveBeenCalled();
     });
 
-    it('should log successful upload', async () => {
-      const dto = { file: Buffer.from('test') };
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'getFilepath').mockReturnValue('/path/file');
-      jest.spyOn(imagesService, 'isFileExists').mockReturnValue(false);
-      jest.spyOn(imagesService, 'saveImage').mockResolvedValue('webp');
+    it("should log successful upload", async () => {
+      const dto = { file: Buffer.from("test") };
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest.spyOn(imagesService, "getFilepath").mockReturnValue("/path/file");
+      jest.spyOn(imagesService, "isFileExists").mockReturnValue(false);
+      jest.spyOn(imagesService, "saveImage").mockResolvedValue("webp");
 
-      await controller.addImage(dto, 'valid-key');
+      await controller.addImage(dto, "valid-key");
 
       expect(logger.log).toHaveBeenCalledWith(
-        expect.stringContaining('uploaded successfully'),
+        expect.stringContaining("uploaded successfully")
       );
     });
 
-    it('should handle BadRequestException from service', async () => {
-      const dto = { file: Buffer.from('test') };
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'getFilepath').mockReturnValue('/path/file');
-      jest.spyOn(imagesService, 'isFileExists').mockReturnValue(false);
-      jest.spyOn(imagesService, 'saveImage').mockRejectedValue(
-        new BadRequestException('File too large'),
-      );
+    it("should handle BadRequestException from service", async () => {
+      const dto = { file: Buffer.from("test") };
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest.spyOn(imagesService, "getFilepath").mockReturnValue("/path/file");
+      jest.spyOn(imagesService, "isFileExists").mockReturnValue(false);
+      jest
+        .spyOn(imagesService, "saveImage")
+        .mockRejectedValue(new BadRequestException("File too large"));
 
       try {
-        await controller.addImage(dto, 'valid-key');
-        fail('Should have thrown');
+        await controller.addImage(dto, "valid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(400);
@@ -290,18 +293,18 @@ describe('ImagesController', () => {
       expect(logger.warn).toHaveBeenCalled();
     });
 
-    it('should handle generic errors from service', async () => {
-      const dto = { file: Buffer.from('test') };
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'getFilepath').mockReturnValue('/path/file');
-      jest.spyOn(imagesService, 'isFileExists').mockReturnValue(false);
-      jest.spyOn(imagesService, 'saveImage').mockRejectedValue(
-        new Error('Unknown error'),
-      );
+    it("should handle generic errors from service", async () => {
+      const dto = { file: Buffer.from("test") };
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest.spyOn(imagesService, "getFilepath").mockReturnValue("/path/file");
+      jest.spyOn(imagesService, "isFileExists").mockReturnValue(false);
+      jest
+        .spyOn(imagesService, "saveImage")
+        .mockRejectedValue(new Error("Unknown error"));
 
       try {
-        await controller.addImage(dto, 'valid-key');
-        fail('Should have thrown');
+        await controller.addImage(dto, "valid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(500);
@@ -311,20 +314,20 @@ describe('ImagesController', () => {
     });
   });
 
-  describe('DELETE /img/:filename', () => {
-    it('should reject request without API key', async () => {
+  describe("DELETE /img/:filename", () => {
+    it("should reject request without API key", async () => {
       try {
-        await controller.deleteImage('image.jpg', undefined);
-        fail('Should have thrown');
+        await controller.deleteImage("image.jpg", undefined);
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(401);
       }
     });
 
-    it('should log warning when no API key provided', async () => {
+    it("should log warning when no API key provided", async () => {
       try {
-        await controller.deleteImage('image.jpg', undefined);
+        await controller.deleteImage("image.jpg", undefined);
       } catch (e) {
         // Expected
       }
@@ -332,50 +335,50 @@ describe('ImagesController', () => {
       expect(logger.warn).toHaveBeenCalled();
     });
 
-    it('should reject request with invalid API key', async () => {
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {
-        throw new BadRequestException('Invalid API key');
+    it("should reject request with invalid API key", async () => {
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {
+        throw new BadRequestException("Invalid API key");
       });
 
       try {
-        await controller.deleteImage('image.jpg', 'invalid-key');
-        fail('Should have thrown');
+        await controller.deleteImage("image.jpg", "invalid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(401);
       }
     });
 
-    it('should reject request without filename', async () => {
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
+    it("should reject request without filename", async () => {
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
 
       try {
-        await controller.deleteImage(undefined, 'valid-key');
-        fail('Should have thrown');
+        await controller.deleteImage(undefined, "valid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(BadRequestException);
       }
     });
 
-    it('should return 404 if file not found', async () => {
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(null);
+    it("should return 404 if file not found", async () => {
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(null);
 
       try {
-        await controller.deleteImage('nonexistent.jpg', 'valid-key');
-        fail('Should have thrown');
+        await controller.deleteImage("nonexistent.jpg", "valid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(404);
       }
     });
 
-    it('should log warning when file not found', async () => {
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue(null);
+    it("should log warning when file not found", async () => {
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest.spyOn(imagesService, "resolveFilepath").mockReturnValue(null);
 
       try {
-        await controller.deleteImage('nonexistent.jpg', 'valid-key');
+        await controller.deleteImage("nonexistent.jpg", "valid-key");
       } catch (e) {
         // Expected
       }
@@ -383,27 +386,31 @@ describe('ImagesController', () => {
       expect(logger.warn).toHaveBeenCalled();
     });
 
-    it('should return status ok on successful delete', async () => {
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue('/path/to/file');
-      jest.spyOn(imagesService, 'deleteImage').mockResolvedValue(true);
+    it("should return status ok on successful delete", async () => {
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest
+        .spyOn(imagesService, "resolveFilepath")
+        .mockReturnValue("/path/to/file");
+      jest.spyOn(imagesService, "deleteImage").mockResolvedValue(true);
 
-      const result = await controller.deleteImage('image.jpg', 'valid-key');
+      const result = await controller.deleteImage("image.jpg", "valid-key");
 
-      expect(result.status).toBe('ok');
+      expect(result.status).toBe("ok");
       expect(logger.log).toHaveBeenCalled();
     });
 
-    it('should handle errors during deletion', async () => {
-      jest.spyOn(imagesService, 'verifyKey').mockImplementation(() => {});
-      jest.spyOn(imagesService, 'resolveFilepath').mockReturnValue('/path/to/file');
-      jest.spyOn(imagesService, 'deleteImage').mockRejectedValue(
-        new Error('Permission denied'),
-      );
+    it("should handle errors during deletion", async () => {
+      jest.spyOn(imagesService, "verifyKey").mockImplementation(() => {});
+      jest
+        .spyOn(imagesService, "resolveFilepath")
+        .mockReturnValue("/path/to/file");
+      jest
+        .spyOn(imagesService, "deleteImage")
+        .mockRejectedValue(new Error("Permission denied"));
 
       try {
-        await controller.deleteImage('image.jpg', 'valid-key');
-        fail('Should have thrown');
+        await controller.deleteImage("image.jpg", "valid-key");
+        fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         expect(error.status).toBe(500);
