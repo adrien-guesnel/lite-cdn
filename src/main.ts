@@ -8,9 +8,9 @@ import {
 } from "@nestjs/platform-fastify";
 import { WinstonModule } from "nest-winston";
 
-import { AppModule } from "@src/app.module";
 import { loggerMiddleware } from "@src/logger/logger.middleware";
 import { instance } from "@src/logger/winston.logger";
+import { AppModule } from "@src/modules/app/app.module";
 
 async function bootstrap() {
   const logger = new Logger();
@@ -49,7 +49,7 @@ async function bootstrap() {
 
   app.use(loggerMiddleware);
 
-  await app.listen(configService.get("port"), "0.0.0.0");
+  await app.listen(configService.get<number>("port"), "0.0.0.0");
 
   logger.log(`Application is running port: ${configService.get("port")}`);
 }

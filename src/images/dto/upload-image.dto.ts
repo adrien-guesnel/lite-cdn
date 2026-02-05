@@ -1,10 +1,1 @@
-import { IsNotEmpty } from "class-validator";
-
-export class UploadImageDto {
-  @IsNotEmpty()
-  file: Buffer;
-
-  constructor(file: Buffer) {
-    this.file = file;
-  }
-}
+export { UploadImageDto } from "@src/modules/images/dto/upload-image.dto";
