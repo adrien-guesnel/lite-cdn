@@ -49,36 +49,6 @@ export class ImagesService {
   }
 
   /**
-   * Validate and sanitize filename to prevent path traversal
-   */
-  private validateFilename(filename: string): void {
-    // Reject if filename contains path traversal patterns
-    if (
-      filename.includes("..") ||
-      filename.includes("/") ||
-      filename.includes("\\")
-    ) {
-      throw new BadRequestException(
-        "Invalid filename: path traversal detected"
-      );
-    }
-
-    // Reject if filename is empty or too long
-    if (!filename || filename.length > 255) {
-      throw new BadRequestException(
-        "Invalid filename: must be between 1 and 255 characters"
-      );
-    }
-
-    // Only allow alphanumeric, hyphens, underscores, and dots
-    if (!/^[a-zA-Z0-9._-]+$/.test(filename)) {
-      throw new BadRequestException(
-        "Invalid filename: only alphanumeric, dots, hyphens and underscores allowed"
-      );
-    }
-  }
-
-  /**
    * Ensure filepath is within public/images directory (security check)
    */
   private securePath(filepath: string): void {
@@ -89,7 +59,6 @@ export class ImagesService {
   }
 
   getFilepath(filename: string): string {
-    this.validateFilename(filename);
     const filepath = path.resolve(`public/images/${filename}`);
     this.securePath(filepath);
     return filepath;
@@ -178,28 +147,31 @@ export class ImagesService {
       const maxWidth = this.configService.get<number>("saveMaxWidth");
       const maxHeight = this.configService.get<number>("saveMaxHeight");
 
+      const filepathWithExt = `${filepath}.webp`;
+
       await image
         .resize(maxWidth, maxHeight, {
           withoutEnlargement: metadata.format !== "svg",
           fit: "inside",
         })
         .toFormat("webp")
-        .toFile(filepath);
+        .toFile(filepathWithExt);
 
       const duration = Date.now() - startTime;
       this.logger.log(
-        `Image saved successfully: ${path.basename(filepath)} (${duration}ms, original format: ${metadata.format})`,
+        `Image saved successfully: ${path.basename(filepathWithExt)} (${duration}ms, original format: ${metadata.format})`,
         this.SERVICE
       );
 
-      return "webp";
+      return filepathWithExt;
     } catch (error) {
       // Clean up partial file if it was created
-      if (this.isFileExists(filepath)) {
+      const filepathWithExt = `${filepath}.webp`;
+      if (this.isFileExists(filepathWithExt)) {
         try {
-          await this.deleteImage(filepath);
+          await this.deleteImage(filepathWithExt);
           this.logger.warn(
-            `Cleaned up partial file after save error: ${path.basename(filepath)}`,
+            `Cleaned up partial file after save error: ${path.basename(filepathWithExt)}`,
             this.SERVICE
           );
         } catch (cleanupError) {
@@ -251,16 +223,6 @@ export class ImagesService {
   resolveFilepath(filename: string): string | null {
     const startTime = Date.now();
 
-    try {
-      this.validateFilename(filename);
-    } catch (_error) {
-      this.logger.warn(
-        `Invalid filename in resolveFilepath: ${filename}`,
-        this.SERVICE
-      );
-      return null;
-    }
-
     // First try the filename as-is
     let filepath = this.getFilepath(filename);
     if (this.isFileExists(filepath)) {
@@ -304,22 +266,5 @@ export class ImagesService {
       this.SERVICE
     );
     return null;
-  }
-
-  verifyKey(key: string): void {
-    const API_SECRET = this.configService.get<string>("API_SECRET");
-
-    if (!API_SECRET) {
-      this.logger.error("API_SECRET not configured", this.SERVICE);
-      throw new InternalServerErrorException("Server configuration error");
-    }
-
-    if (key !== API_SECRET) {
-      this.logger.warn(
-        "Unauthorized access attempt with invalid key",
-        this.SERVICE
-      );
-      throw new BadRequestException("Invalid API key");
-    }
   }
 }

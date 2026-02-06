@@ -39,7 +39,9 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   await app.register(helmet, {
-    crossOriginResourcePolicy: { policy: "same-site" },
+    crossOriginResourcePolicy: {
+      policy: configService.get("crossOriginResourcePolicy"),
+    },
   });
 
   app.enableCors({

@@ -1,27 +1,32 @@
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
+import * as path from "node:path";
 
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
   Header,
-  Headers,
   HttpException,
   HttpStatus,
   Logger,
+  NotFoundException,
   Param,
   Post,
   Query,
   StreamableFile,
+  UseGuards,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Throttle } from "@nestjs/throttler";
 
-import { UploadImageDto } from "@src/modules/images/dto/upload-image.dto";
 import { ImagesService } from "@src/modules/images/images.service";
+
+import { ApiKeyGuard } from "../../guards/api-key.guard";
+import { ValidateFilenamePipe } from "./pipes/validate-filename.pipe";
 
 @Controller("img")
 export class ImagesController {
@@ -57,23 +62,49 @@ export class ImagesController {
     return Math.floor(parsed);
   }
 
+  private formatToMime(formatOrExt?: string): string {
+    if (!formatOrExt) {
+      return "application/octet-stream";
+    }
+
+    const map: Record<string, string> = {
+      jpeg: "image/jpeg",
+      jpg: "image/jpeg",
+      png: "image/png",
+      webp: "image/webp",
+      gif: "image/gif",
+      avif: "image/avif",
+      tiff: "image/tiff",
+      svg: "image/svg+xml",
+    };
+
+    const v = formatOrExt.toLowerCase();
+    if (map[v]) {
+      return map[v];
+    }
+
+    // handle extension like .webp
+    const ext = v.startsWith(".") ? v.slice(1) : v;
+    if (map[ext]) {
+      return map[ext];
+    }
+
+    // fallback to generic image/*
+    return `image/${ext}`;
+  }
+
   @Get(":filename")
   @Header("Cache-Control", "max-age=3600")
   async getImage(
-    @Param("filename") filename: string,
+    @Param("filename", ValidateFilenamePipe) filename: string,
     @Query("h") height?: string,
     @Query("w") width?: string
   ): Promise<StreamableFile> {
-    if (!filename) {
-      throw new BadRequestException("Filename is required");
-    }
-
     const filepath = this.imagesServices.resolveFilepath(filename);
 
     if (!filepath) {
       this.logger.warn(`Image ${filename} not found`);
-
-      throw new HttpException("File not found", HttpStatus.NOT_FOUND);
+      throw new NotFoundException("File not found");
     }
 
     const maxHeight = this.configService.get<number>("saveMaxHeight");
@@ -81,32 +112,35 @@ export class ImagesController {
     const parsedHeight = this.parseDimension(height, "h", maxHeight);
     const parsedWidth = this.parseDimension(width, "w", maxWidth);
 
-    if (!parsedHeight && !parsedWidth) {
-      const file = createReadStream(filepath);
-      this.logger.log(`Deliver image ${filename}`);
-
-      return new StreamableFile(file);
-    }
-
     try {
       const metadata = await this.imagesServices.getImageMetadata(filepath);
+      const mime = this.formatToMime(
+        metadata.format ?? path.extname(filepath).replace(".", "")
+      );
+
+      if (!parsedHeight && !parsedWidth) {
+        const file = createReadStream(filepath);
+        this.logger.log(`Deliver image ${filename}`);
+        return new StreamableFile(file, {
+          type: mime,
+          disposition: `inline; filename="${path.basename(filename)}"`,
+        });
+      }
+
       const buffer = await this.imagesServices.getResizedImage(
         filepath,
         parsedWidth,
         parsedHeight
       );
-
       this.logger.log(
         `Deliver resized image ${filename} (${parsedWidth}x${parsedHeight})`
       );
-
       return new StreamableFile(buffer, {
-        type: metadata.format as string,
-        disposition: `attachment; filename="${filename}"`,
+        type: mime,
+        disposition: `inline; filename="${path.basename(filename)}"`,
       });
     } catch (error) {
       this.logger.error(`Error processing image ${filename}: ${error.message}`);
-
       throw new HttpException(
         "Error processing image",
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -116,40 +150,28 @@ export class ImagesController {
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post()
+  @UseGuards(ApiKeyGuard)
   async addImage(
-    @Body() data: UploadImageDto,
-    @Headers("key") key: string
+    @Body() imgData: Buffer | string
   ): Promise<{ status: string; filename: string }> {
-    if (!key) {
-      this.logger.warn("Upload attempt without API key");
-
-      throw new HttpException("API key required", HttpStatus.UNAUTHORIZED);
-    }
-
-    try {
-      this.imagesServices.verifyKey(key);
-    } catch (_error) {
-      if (_error instanceof BadRequestException) {
-        this.logger.warn("Unauthorized upload attempt");
-
-        throw new HttpException("Invalid API key", HttpStatus.UNAUTHORIZED);
-      }
-
-      if (_error instanceof HttpException) {
-        throw _error;
-      }
-
-      this.logger.error("Upload failed due to server configuration error");
-      throw new HttpException(
-        "Server configuration error",
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-
-    if (!data || !data.file) {
+    if (!imgData) {
       this.logger.warn("Upload attempt with no image data");
-
       throw new HttpException("No image data provided", HttpStatus.BAD_REQUEST);
+    }
+
+    const maxFileSize = this.configService.getOrThrow<number>("maxFileSize");
+
+    const payloadSize = Buffer.isBuffer(imgData)
+      ? imgData.length
+      : Buffer.byteLength(String(imgData));
+    if (payloadSize > maxFileSize) {
+      this.logger.warn(
+        `Uploaded file exceeds max size (${payloadSize} > ${maxFileSize})`
+      );
+
+      throw new BadRequestException(
+        `File size exceeds maximum allowed size of ${maxFileSize / 1024 / 1024}MB`
+      );
     }
 
     const filename = randomUUID();
@@ -159,19 +181,21 @@ export class ImagesController {
     if (isFileExists) {
       this.logger.warn(`Image ${filename} already exists (UUID collision)`);
 
-      throw new HttpException(
-        "File already exists (please retry)",
-        HttpStatus.CONFLICT
-      );
+      throw new ConflictException("File already exists (please retry)");
     }
 
     try {
-      const format = await this.imagesServices.saveImage(data.file, filepath);
-      this.logger.log(`Image uploaded successfully: ${filename}.${format}`);
+      const filepathWithExt = await this.imagesServices.saveImage(
+        imgData,
+        filepath
+      );
+      const filenameWithExt = path.basename(filepathWithExt);
+
+      this.logger.log(`Image uploaded successfully: ${filenameWithExt}`);
 
       return {
         status: "ok",
-        filename: `${filename}.${format}`,
+        filename: filenameWithExt,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -195,40 +219,10 @@ export class ImagesController {
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Delete(":filename")
+  @UseGuards(ApiKeyGuard)
   async deleteImage(
-    @Param("filename") filename: string,
-    @Headers("key") key: string
+    @Param("filename", ValidateFilenamePipe) filename: string
   ): Promise<{ status: string }> {
-    if (!key) {
-      this.logger.warn("Delete attempt without API key");
-
-      throw new HttpException("API key required", HttpStatus.UNAUTHORIZED);
-    }
-
-    try {
-      this.imagesServices.verifyKey(key);
-    } catch (_error) {
-      if (_error instanceof BadRequestException) {
-        this.logger.warn("Unauthorized delete attempt");
-
-        throw new HttpException("Invalid API key", HttpStatus.UNAUTHORIZED);
-      }
-
-      if (_error instanceof HttpException) {
-        throw _error;
-      }
-
-      this.logger.error("Delete failed due to server configuration error");
-      throw new HttpException(
-        "Server configuration error",
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-
-    if (!filename) {
-      throw new BadRequestException("Filename is required");
-    }
-
     const filepath = this.imagesServices.resolveFilepath(filename);
 
     if (!filepath) {
