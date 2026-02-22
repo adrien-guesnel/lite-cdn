@@ -9,7 +9,7 @@ export default () => ({
   apiLimitRequestsByWindowAndIp:
     Number(process.env.API_LIMIT_REQUESTS_BY_WINDOW_AND_IP) || 50,
   maxFileSize: Number(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB default
-  maxImagePixels: Number(process.env.MAX_IMAGE_PIXELS) || 25_000_000, // 25 megapixels default
+  maxImagePixels: Number(process.env.MAX_IMAGE_PIXELS) || 50_000_000, // 50 megapixels default
   allowSvgUploads: process.env.ALLOW_SVG_UPLOADS === "true",
   uploadThrottle: {
     limit: Number(process.env.UPLOAD_THROTTLE_LIMIT) || 5,

@@ -182,7 +182,7 @@ export class ImagesService {
         );
       }
 
-      const image = await sharp(imgData, {
+      const image = sharp(imgData, {
         limitInputPixels: this.maxImagePixels,
       });
       const metadata = await image.metadata();
@@ -216,6 +216,8 @@ export class ImagesService {
       return filepathWithExt;
     } catch (error) {
       this.cleanupPartialFile(filepath, toFormat);
+
+      this.logger.error(error.message);
 
       if (error instanceof BadRequestException) {
         throw error;
