@@ -1,15 +1,16 @@
-import { NestFactory } from '@nestjs/core';
+import helmet from "@fastify/helmet";
+import { Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { NestFactory } from "@nestjs/core";
 import {
   FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
-import { AppModule } from './app.module';
-import { ConfigService } from '@nestjs/config';
-import { WinstonModule } from 'nest-winston';
-import { instance } from './logger/winston.logger';
-import { loggerMiddleware } from './logger/logger.middleware';
-import { Logger } from '@nestjs/common';
-import helmet from '@fastify/helmet';
+  type NestFastifyApplication,
+} from "@nestjs/platform-fastify";
+import { WinstonModule } from "nest-winston";
+
+import { loggerMiddleware } from "@src/logger/logger.middleware";
+import { instance } from "@src/logger/winston.logger";
+import { AppModule } from "@src/modules/app/app.module";
 
 async function bootstrap() {
   const logger = new Logger();
@@ -19,13 +20,11 @@ async function bootstrap() {
   });
 
   fastifyAdapter.getInstance().addContentTypeParser(
-    'application/octet-stream',
+    "application/octet-stream",
     {
-      parseAs: 'buffer',
+      parseAs: "buffer",
     },
-    async function (request, payload) {
-      return payload;
-    },
+    async (_request, payload) => payload
   );
 
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -35,24 +34,26 @@ async function bootstrap() {
       logger: WinstonModule.createLogger({
         instance: instance,
       }),
-    },
+    }
   );
   const configService = app.get(ConfigService);
 
   await app.register(helmet, {
-    crossOriginResourcePolicy: { policy: 'same-site' },
+    crossOriginResourcePolicy: {
+      policy: configService.get("crossOriginResourcePolicy"),
+    },
   });
 
   app.enableCors({
-    origin: configService.get('allowedOrigins'),
+    origin: configService.get("allowedOrigins"),
     credentials: true,
   });
 
   app.use(loggerMiddleware);
 
-  await app.listen(configService.get('port'), '0.0.0.0');
+  await app.listen(configService.get<number>("port"), "0.0.0.0");
 
-  logger.log(`Application is running port: ${configService.get('port')}`);
+  logger.log(`Application is running port: ${configService.get("port")}`);
 }
 
 bootstrap();

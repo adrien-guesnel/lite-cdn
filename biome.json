@@ -1,0 +1,97 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.12/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": { "ignoreUnknown": false },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 80,
+    "lineEnding": "lf",
+    "formatWithErrors": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedImports": {
+          "level": "error",
+          "fix": "safe"
+        },
+        "noConstantCondition": "warn",
+        "noEmptyPattern": "error",
+        "noInvalidConstructorSuper": "error",
+        "noSetterReturn": "error",
+        "noStringCaseMismatch": "error",
+        "noUndeclaredVariables": "error",
+        "noUnreachable": "error",
+        "noUnusedVariables": "error"
+      },
+      "suspicious": {
+        "noDuplicateJsxProps": "error",
+        "noExplicitAny": "warn",
+        "noImplicitAnyLet": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn",
+        "useAsConstAssertion": "warn",
+        "useBlockStatements": "error",
+        "useImportType": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "semicolons": "always",
+      "trailingCommas": "es5"
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
+    "globals": ["jest", "describe", "beforeEach", "afterEach", "it", "expect"]
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              [":BUN:", ":NODE:"],
+              ":BLANK_LINE:",
+              [
+                ":PACKAGE:",
+                "!@components/**",
+                "!@core/**",
+                "!@app/**",
+                "!@src/**",
+                "!@api-types/**",
+                "!@public/**",
+                "!@/**"
+              ],
+              ":BLANK_LINE:",
+              [
+                "@components/**",
+                "@core/**",
+                "@app/**",
+                "@src/**",
+                "@api-types/**",
+                "@public/**",
+                "@/**"
+              ],
+              ":BLANK_LINE:",
+              [":ALIAS:", ":PATH:"]
+            ]
+          }
+        }
+      }
+    }
+  }
+}
