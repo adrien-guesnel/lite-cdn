@@ -31,7 +31,7 @@ describe("ApiKeyGuard", () => {
           useValue: {
             get: jest.fn((key: string) => {
               const config = {
-                API_SECRET: "test-secret-key",
+                API_SECRET: "test-secret-key-123",
               };
               return config[key];
             }),
@@ -89,7 +89,7 @@ describe("ApiKeyGuard", () => {
         switchToHttp: jest.fn().mockReturnValue({
           getRequest: jest.fn().mockReturnValue({
             headers: {
-              key: "test-secret-key",
+              key: "test-secret-key-123",
             },
           }),
         }),
@@ -137,7 +137,7 @@ describe("ApiKeyGuard", () => {
         switchToHttp: jest.fn().mockReturnValue({
           getRequest: jest.fn().mockReturnValue({
             headers: {
-              key: "test-secret-key",
+              key: "test-secret-key-123",
             },
           }),
         }),
@@ -182,7 +182,7 @@ describe("ApiKeyGuard", () => {
         switchToHttp: jest.fn().mockReturnValue({
           getRequest: jest.fn().mockReturnValue({
             headers: {
-              key: "TEST-SECRET-KEY",
+              key: "TEST-SECRET-KEY-123",
             },
           }),
         }),
@@ -237,16 +237,26 @@ describe("ApiKeyGuard", () => {
       expect(configService.get).toHaveBeenCalledWith("API_SECRET");
     });
 
-    it("should handle undefined API_SECRET gracefully", () => {
+    it("should throw at instantiation when API_SECRET is missing", () => {
       const mockConfigService = {
         get: jest.fn(() => undefined),
       };
 
-      // Should not throw
       expect(
         () =>
           new ApiKeyGuard(logger, mockConfigService as unknown as ConfigService)
-      ).not.toThrow();
+      ).toThrow("API_SECRET must be set");
+    });
+
+    it("should throw at instantiation when API_SECRET is too short", () => {
+      const mockConfigService = {
+        get: jest.fn(() => "short-secret"),
+      };
+
+      expect(
+        () =>
+          new ApiKeyGuard(logger, mockConfigService as unknown as ConfigService)
+      ).toThrow("at least 16 characters");
     });
   });
 });

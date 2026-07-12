@@ -35,7 +35,9 @@ describe("ImagesController", () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn(),
+            get: jest.fn((key: string) =>
+              key === "API_SECRET" ? "test-secret-key-123" : undefined
+            ),
             getOrThrow: jest.fn(),
           },
         },
