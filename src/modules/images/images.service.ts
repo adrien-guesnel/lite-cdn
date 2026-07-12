@@ -12,7 +12,7 @@ import {
   StreamableFile,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import * as sharp from "sharp";
+import sharp, { type FormatEnum } from "sharp";
 
 interface ImageResponse {
   file: StreamableFile;
@@ -169,7 +169,7 @@ export class ImagesService {
   async saveImage(
     imgData: Buffer | string,
     filepath: string,
-    toFormat: keyof sharp.FormatEnum = "webp"
+    toFormat: keyof FormatEnum = "webp"
   ): Promise<string> {
     const startTime = Date.now();
 
@@ -409,7 +409,7 @@ export class ImagesService {
 
   private cleanupPartialFile(
     filepath: string,
-    toFormat: keyof sharp.FormatEnum
+    toFormat: keyof FormatEnum
   ): void {
     const filepathWithExt = `${filepath}.${toFormat}`;
     if (this.isFileExists(filepathWithExt)) {

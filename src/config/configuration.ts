@@ -1,6 +1,9 @@
 export default () => ({
   port: Number.parseInt(process.env.PORT, 10) || 11111,
-  allowedOrigins: process.env.ALLOWED_ORIGINS || "*",
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   crossOriginResourcePolicy:
     process.env.CROSS_ORIGIN_RESOURCE_POLICY || "same-site",
   saveMaxHeight: Number(process.env.SAVE_MAX_HEIGHT) || 1080,

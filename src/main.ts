@@ -44,10 +44,13 @@ async function bootstrap() {
     },
   });
 
-  app.enableCors({
-    origin: configService.get("allowedOrigins"),
-    credentials: true,
-  });
+  const allowedOrigins = configService.get<string[]>("allowedOrigins");
+  if (allowedOrigins.length > 0) {
+    app.enableCors({
+      origin: allowedOrigins,
+      credentials: true,
+    });
+  }
 
   app.use(loggerMiddleware);
 
