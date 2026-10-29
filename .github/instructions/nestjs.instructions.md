@@ -1,11 +1,13 @@
 ---
-applyTo: "**/*.controller.ts,**/*.service.ts,**/*.module.ts,**/*.dto.ts"
+
+applyTo: "**/*.controller.ts,**/_.service.ts,**/_.module.ts,**/*.dto.ts"
 description: "Instructions for NestJS files"
 ---
 
 # NestJS Development Guidelines
 
 ## Controllers
+
 - Keep controllers thin - delegate business logic to services
 - Use appropriate HTTP decorators (`@Get`, `@Post`, `@Put`, `@Delete`, etc.)
 - Apply validation pipes to DTOs
@@ -14,6 +16,7 @@ description: "Instructions for NestJS files"
 - Handle exceptions with exception filters
 
 ## Services
+
 - Contain all business logic
 - Mark with `@Injectable()` decorator
 - Inject dependencies through constructor
@@ -22,6 +25,7 @@ description: "Instructions for NestJS files"
 - Use NestJS Logger instead of console.log
 
 ## DTOs (Data Transfer Objects)
+
 - Define strict input/output structures
 - Use class-validator decorators for validation
 - Use class-transformer decorators for transformation
@@ -29,6 +33,7 @@ description: "Instructions for NestJS files"
 - Document required vs optional fields
 
 ## Modules
+
 - Organize by feature/domain
 - Import dependencies explicitly
 - Export providers that other modules need
@@ -36,6 +41,7 @@ description: "Instructions for NestJS files"
 - Avoid circular dependencies
 
 ## Dependency Injection
+
 - Prefer constructor injection
 - Use interfaces instead of concrete classes when possible
 - Avoid `forwardRef`

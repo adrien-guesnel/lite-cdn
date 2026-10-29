@@ -217,14 +217,15 @@ export class ImagesService {
     } catch (error) {
       this.cleanupPartialFile(filepath, toFormat);
 
-      this.logger.error(error.message);
+      const message = error instanceof Error ? error.message : undefined;
+      this.logger.error(message);
 
       if (error instanceof BadRequestException) {
         throw error;
       }
 
       throw new BadRequestException(
-        `Error processing image: ${error.message || "Unknown error"}`
+        `Error processing image: ${message || "Unknown error"}`
       );
     }
   }

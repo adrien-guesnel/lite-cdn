@@ -1,4 +1,5 @@
 ---
+
 applyTo: "**/*.test.ts,**/*.spec.ts"
 description: "Instructions for test files"
 ---
@@ -6,6 +7,7 @@ description: "Instructions for test files"
 # Testing Directives
 
 ## Jest Configuration
+
 - Use Jest exclusively for all tests
 - Structure: `describe()` for test suites, `it()` or `test()` for individual test cases
 - Include setup/teardown with `beforeEach`/`afterEach` if necessary
@@ -13,6 +15,7 @@ description: "Instructions for test files"
 - Verify assertions with `expect()`
 
 ## NestJS Testing
+
 - Use NestJS Testing utilities (`@nestjs/testing`)
 - Create testing modules with `Test.createTestingModule()`
 - Mock providers and dependencies properly
@@ -21,8 +24,9 @@ description: "Instructions for test files"
 - Use `beforeEach` to create fresh module instances
 
 ## Test Structure
+
 ```typescript
-describe('ServiceName', () => {
+describe("ServiceName", () => {
   let service: ServiceName;
   let dependency: MockType<DependencyName>;
 
@@ -41,21 +45,22 @@ describe('ServiceName', () => {
     dependency = module.get(DependencyName);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('methodName', () => {
-    it('should handle success case', async () => {
+  describe("methodName", () => {
+    it("should handle success case", async () => {
       // Arrange
       // Act
       // Assert
     });
 
-    it('should handle error case', async () => {
+    it("should handle error case", async () => {
       // Arrange
       // Act
       // Assert
     });
   });
 });
+```
