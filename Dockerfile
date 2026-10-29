@@ -1,43 +1,34 @@
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 WORKDIR /app
 
-# Install dependencies only when needed
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+COPY package.json ./
+# Upgrading corepack is not cosmetic: the version bundled in the node image is
+# frozen at image build time, and an outdated one fails signature verification
+# against newer pnpm releases with "Cannot find matching keyid".
+RUN npm i -g corepack@latest \
+  && corepack enable \
+  && corepack prepare --activate
+
 FROM base AS deps
-# Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* pnpm-workspace.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm i --frozen-lockfile
 
-# Install prod dependencies only when needed
 FROM base AS deps_prod
-# Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* pnpm-workspace.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile --production; \
-  elif [ -f package-lock.json ]; then npm ci --only=production; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile --prod --ignore-scripts; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 
-# Install all node_modules and build the project
 FROM base AS build
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN \
-  if [ -f yarn.lock ]; then yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+RUN pnpm run build
 
 
-FROM base AS prod
+FROM node:26-alpine AS prod
+WORKDIR /app
 
 ENV NODE_ENV="production"
 
